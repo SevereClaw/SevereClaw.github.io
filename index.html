@@ -629,6 +629,11 @@ async function loadGist(){
       const off = u => u && Object.assign({}, u, {discord_status:"offline", activities:[]});
       P = alive ? users[DISCORD_ID] : off(users[DISCORD_ID]);
       if (P) renderNow(); else noStatus("статус недоступен");
+      if (P && !alive){
+        const t = new Date(data.updated), same = t.toDateString() === new Date().toDateString();
+        $('stt').textContent = "статус не обновлялся с " + (same ? "" : t.toLocaleDateString('ru-RU',{day:'numeric',month:'short'}) + " ") + t.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+        $('acts').innerHTML = '<div class="idle-msg">Программа CyberSite сейчас не на связи, поэтому не видно, что я делаю.</div>';
+      }
       FRIENDS.forEach((f,i) => renderFriend(f, i, users[f.id] ? (alive ? users[f.id] : off(users[f.id])) : null));
     }
     if (files[VFILE]) renderGuests(JSON.parse(files[VFILE].content));
