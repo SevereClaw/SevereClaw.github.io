@@ -459,12 +459,16 @@ window.onTgAuth = user => { ntfy({ t:"login", via:"telegram", user }); toast("О
 const PFILE = "presence.json", VFILE = "visitors.json", STALE = 5*60*1000;
 let gistId = store.get('presenceGist');
 async function findGist(){
-  const r = await fetch(`https://api.github.com/users/${GH_USER}/gists?per_page=100`);
+  // Если gist со статусом несколько (старый бот и новая программа), берём тот, что обновлялся последним.
+  const r = await fetch(`https://api.github.com/users/${GH_USER}/gists?per_page=100`, { cache: "no-store" });
   if (!r.ok) return null;
-  const g = (await r.json()).find(g => g.files && g.files[PFILE]);
-  if (g) store.set('presenceGist', g.id);
-  return g ? g.id : null;
+  const list = (await r.json()).filter(g => g.files && g.files[PFILE])
+    .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+  const id = list.length ? list[0].id : null;
+  if (id) store.set('presenceGist', id); else store.del('presenceGist');
+  return id;
 }
+let lastFind = 0;
 function noStatus(msg){ $('stt').textContent = msg; $('acts').innerHTML = ""; }
 async function loadGist(){
   try {
@@ -479,6 +483,11 @@ async function loadGist(){
       SITE = data.site || {};
       renderSign();
       const alive = data.bot !== false && Date.now() - data.updated < STALE;
+      if (!alive && Date.now() - lastFind > 120000){
+        lastFind = Date.now();
+        const fresh = await findGist();
+        if (fresh && fresh !== gistId){ gistId = fresh; return loadGist(); }
+      }
       const users = data.users || {};
       const off = u => u && Object.assign({}, u, {discord_status:"offline", activities:[]});
       P = alive ? users[DISCORD_ID] : off(users[DISCORD_ID]);
