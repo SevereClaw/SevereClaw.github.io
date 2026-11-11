@@ -11,12 +11,32 @@ if (!fs.existsSync(CFG_PATH)) {
   console.error('Нет config.json. Скопируй config.example.json в config.json и заполни его.');
   process.exit(1);
 }
-const cfg = JSON.parse(fs.readFileSync(CFG_PATH, 'utf8'));
+let cfg;
+try {
+  // Блокнот иногда сохраняет файл с невидимым символом BOM в начале — убираем его.
+  cfg = JSON.parse(fs.readFileSync(CFG_PATH, 'utf8').replace(/^﻿/, ''));
+} catch (e) {
+  console.error('config.json сломан, не могу его прочитать:', e.message);
+  console.error('Проверь, что каждое значение в кавычках, а между строками стоят запятые, как в config.example.json.');
+  process.exit(1);
+}
+const clean = v => String(v || '').trim().replace(/^["'`]+|["'`]+$/g, '').replace(/^Bot\s+/i, '').replace(/\s+/g, '');
+cfg.discordToken = clean(cfg.discordToken);
+cfg.githubToken = clean(cfg.githubToken);
+cfg.guildId = clean(cfg.guildId);
 for (const k of ['discordToken', 'githubToken', 'guildId']) {
-  if (!cfg[k] || String(cfg[k]).includes('ВСТАВЬ')) {
+  if (!cfg[k] || cfg[k].includes('ВСТАВЬ')) {
     console.error(`В config.json не заполнено поле "${k}".`);
     process.exit(1);
   }
+}
+{
+  const t = cfg.discordToken;
+  const hint = 'Нужен токен со вкладки Bot (кнопка Reset Token), а не Application ID, Public Key или Client Secret со вкладки General/OAuth2.';
+  if (/^\d{17,20}$/.test(t)) { console.error('В discordToken стоит ID (только цифры), а не токен. ' + hint); process.exit(1); }
+  if (/^[a-f0-9]{64}$/i.test(t)) { console.error('В discordToken стоит Public Key, а не токен. ' + hint); process.exit(1); }
+  if (t.split('.').length !== 3) { console.error(`discordToken не похож на токен бота (у токена три части через точку, а тут ${t.split('.').length}). ` + hint); process.exit(1); }
+  if (!/^\d{17,20}$/.test(cfg.guildId)) { console.error('guildId должен быть числом, например 1234567890123456789 (ПКМ по серверу → Копировать ID сервера).'); process.exit(1); }
 }
 const IDS = [cfg.ownerId, ...(cfg.friends || [])].filter(Boolean);
 const FILE = 'presence.json';
@@ -146,6 +166,10 @@ process.on('SIGTERM', stop);
 client.login(cfg.discordToken).catch(e => {
   console.error('Не смог войти в Discord:', e.message);
   if (/disallowed intents/i.test(e.message))
-    console.error('Включи в Developer Portal → Bot: PRESENCE INTENT и SERVER MEMBERS INTENT.');
+    console.error('Включи в Developer Portal → Bot: PRESENCE INTENT и SERVER MEMBERS INTENT и нажми Save Changes.');
+  else if (/invalid token|TokenInvalid|401/i.test(e.code + ' ' + e.message))
+    console.error('Discord говорит, что токен неверный. Нажми Reset Token на вкладке Bot, скопируй НОВЫЙ токен целиком и вставь в config.json. Старый после сброса перестаёт работать.');
+  else if (/ENOTFOUND|ECONNRESET|ETIMEDOUT|EAI_AGAIN|fetch failed/i.test(e.code + ' ' + e.message))
+    console.error('Нет связи с Discord. Если Discord у тебя работает только через VPN, включи в NekoBox режим TUN: обычный системный прокси Node.js не использует.');
   process.exit(1);
 });
