@@ -123,6 +123,53 @@ h2::after{content:"";flex:1;height:1px;background:var(--line)}
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;background:#0f1626;border:1px solid var(--acc);padding:12px 18px;font-size:14px;transition:.3s;z-index:9}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
+/* музыка */
+.sub{display:flex;align-items:baseline;gap:10px;margin:34px 0 14px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.sub small{letter-spacing:0;text-transform:none;color:var(--faint)}
+.track{display:flex;gap:18px;align-items:center;padding:16px;border:1px solid var(--line);background:var(--card)}
+.track img,.track .nocov{width:96px;height:96px;object-fit:cover;flex:none;background:#111827}
+.nocov{display:grid;place-items:center;color:var(--faint);font-size:30px}
+.track .t{min-width:0;flex:1}
+.track em{display:flex;align-items:center;gap:8px;font-style:normal;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#4ade80}
+.track em.past{color:var(--faint)}
+.eq{display:inline-flex;gap:2px;align-items:flex-end;height:10px}
+.eq i{width:2px;background:#4ade80;animation:eq .9s ease-in-out infinite}
+.eq i:nth-child(2){animation-delay:-.3s}.eq i:nth-child(3){animation-delay:-.6s}
+@keyframes eq{0%,100%{height:3px}50%{height:10px}}
+.track strong{display:block;font:500 20px/1.25 Oswald,sans-serif;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track p{color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track .bar{margin-top:12px;--k:#4ade80}
+.hist{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1px;padding:1px;margin-top:10px}
+.hi{display:flex;gap:12px;align-items:center;padding:9px 12px;background:var(--bg);box-shadow:0 0 0 1px var(--line);min-width:0}
+.hi img,.hi .nocov{width:38px;height:38px;object-fit:cover;flex:none;background:#111827;font-size:14px}
+.hi .t{min-width:0;flex:1}
+.hi b{display:block;font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hi small{display:block;font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hi time{font-size:11px;color:var(--faint);flex:none}
+
+/* игры за неделю */
+.gtot{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:16px}
+.gtot div b{display:block;font:500 30px/1 Oswald,sans-serif}
+.gtot div small{color:var(--dim);font-size:12px}
+.gbars{display:grid;gap:8px}
+.gb{display:grid;grid-template-columns:180px 1fr 64px;gap:12px;align-items:center;position:relative}
+.gb .nm{display:flex;align-items:center;gap:8px;min-width:0}
+.gb .nm img{width:48px;height:22px;object-fit:cover;flex:none;background:#111827}
+.gb .nm span{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gb .tr{height:14px;position:relative}
+.gb .fl{position:absolute;left:0;top:0;bottom:0;background:var(--acc);border-radius:0 4px 4px 0;transition:width .8s ease}
+.gb .v{font-size:13px;color:var(--fg);text-align:right;font-variant-numeric:tabular-nums}
+.gb:hover .fl{filter:brightness(1.2)}
+.gdays{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;height:90px;align-items:end;margin-top:22px;border-bottom:1px solid var(--line)}
+.gd{position:relative;height:100%;display:flex;align-items:flex-end;justify-content:center;cursor:default}
+.gd u{display:block;width:60%;max-width:34px;background:var(--acc);border-radius:4px 4px 0 0;min-height:0;transition:height .8s ease}
+.gd.today u{background:#a8eeff}
+.glab{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-size:11px;color:var(--faint);text-align:center;margin-top:6px}
+.tip{position:fixed;z-index:20;pointer-events:none;background:#0f1626;border:1px solid var(--line2);padding:8px 11px;font-size:12px;line-height:1.5;opacity:0;transition:opacity .12s;max-width:260px}
+.tip.on{opacity:1}
+.tip b{font-weight:500}
+@media (max-width:520px){.gb{grid-template-columns:90px 1fr 56px}.gb .nm img{display:none}.track img,.track .nocov{width:72px;height:72px}}
+
 footer{margin-top:80px;padding:28px 0 48px;border-top:1px solid var(--line);font-size:12px;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 footer b{color:var(--dim);font-weight:500}
 
@@ -161,6 +208,8 @@ footer b{color:var(--dim);font-weight:500}
       <div class="who"><b id="nm">SevereClaw</b><small id="stt">загрузка…</small></div>
     </div>
     <div class="acts" id="acts"></div>
+    <div id="music"></div>
+    <div id="games"></div>
   </section>
 
   <section id="links">
@@ -192,6 +241,7 @@ footer b{color:var(--dim);font-weight:500}
   </footer>
 </main>
 <div class="toast" id="toast"></div>
+<div class="tip" id="tip"></div>
 
 <script>
 /* ================= ДАННЫЕ — меняй здесь ================= */
@@ -295,12 +345,13 @@ function renderNow(){
   const custom = (P.activities||[]).find(a => a.type === 4);
   $('stt').textContent = ST_NAME[st] + (custom && custom.state ? " · " + custom.state : "");
   setGameBg((P.activities||[]).find(a => a.type === 0));
-  const acts = (P.activities||[]).filter(a => a.type !== 4).map(a => ({
+  const acts = (P.activities||[]).filter(a => a.type !== 4 && a.type !== 2).map(a => ({
     kind:a.type, title:a.details || a.name,
     sub:[a.details ? a.state : "", a.details ? "" : a.state].filter(Boolean).join(" · ") || (a.details ? a.name : ""),
     img: asset(a, a.assets && a.assets.large_image) || (a.art && a.art.header) || "", ts:a.timestamps, app:a.name }));
   const box = $('acts');
-  if (!acts.length){ box.innerHTML = `<div class="idle-msg">${st === "offline" ? "Сейчас не в сети." : "Сейчас ничего не запущено."}</div>`; return; }
+  renderMusic();
+  if (!acts.length){ box.innerHTML = (P.activities||[]).some(a => a.type === 2) ? "" : `<div class="idle-msg">${st === "offline" ? "Сейчас не в сети." : "Сейчас ничего не запущено."}</div>`; return; }
   box.innerHTML = acts.map(a => {
     const [label,color] = KIND[a.kind] || ["Занят","#66e0ff"];
     const img = a.img ? `<img src="${esc(a.img)}" alt="" onerror="this.remove()">` : "";
@@ -455,8 +506,78 @@ window.onTgAuth = user => { ntfy({ t:"login", via:"telegram", user }); toast("О
   setTimeout(() => $('guests').scrollIntoView(), 300);
 })();
 
+
+/* ================= музыка и игры ================= */
+let ACT = null;
+const hm = min => { min = Math.round(min); const h = Math.floor(min/60), m = min%60; return h ? (m ? `${h} ч ${m} мин` : `${h} ч`) : `${m} мин`; };
+const hrs = min => (min/60).toLocaleString('ru-RU', {maximumFractionDigits: min < 600 ? 1 : 0}) + ' ч';
+const tipEl = () => $('tip');
+function tipOn(e, html){ const t = tipEl(); t.innerHTML = html; t.classList.add('on'); tipMove(e); }
+function tipMove(e){ const t = tipEl(); const x = Math.min(e.clientX + 14, innerWidth - t.offsetWidth - 8); t.style.left = x+'px'; t.style.top = (e.clientY + 16)+'px'; }
+function tipOff(){ tipEl().classList.remove('on'); }
+document.addEventListener('mouseover', e => { const el = e.target.closest('[data-tip-html]'); if (el) tipOn(e, el.dataset.tipHtml); });
+document.addEventListener('mousemove', e => { if (e.target.closest('[data-tip-html]')) tipMove(e); });
+document.addEventListener('mouseout', e => { if (e.target.closest('[data-tip-html]') && !e.relatedTarget?.closest?.('[data-tip-html]')) tipOff(); });
+
+function cover(url, cls){ return url ? `<img src="${esc(url)}" alt="" onerror="this.outerHTML='<div class=&quot;nocov ${cls||''}&quot;>♪</div>'">` : `<div class="nocov">♪</div>`; }
+function renderMusic(){
+  const box = $('music'); if (!box) return;
+  const now = P && P.discord_status !== 'offline' ? (P.activities||[]).find(a => a.type === 2 && (a.details || a.state)) : null;
+  const tracks = (ACT && ACT.music && ACT.music.tracks) || [];
+  let card = '';
+  if (now){
+    const t = now.timestamps;
+    const bar = t && t.start && t.end ? `<div class="bar"><u data-s="${t.start}" data-e="${t.end}"></u></div><div class="tm" data-s="${t.start}" data-e="${t.end}"></div>` : '';
+    card = `<div class="track"><div>${cover(asset(now, now.assets && now.assets.large_image))}</div><div class="t">
+      <em><span class="eq"><i></i><i></i><i></i></span>Сейчас слушаю · ${esc(now.name)}</em>
+      <strong>${esc(now.details || now.state)}</strong>${now.details && now.state ? `<p>${esc(now.state)}</p>` : ''}${bar}</div></div>`;
+  } else if (tracks[0]){
+    const t = tracks[0];
+    card = `<div class="track"><div>${cover(t.cover)}</div><div class="t"><em class="past">Последний трек · ${esc(ago(t.time))}</em>
+      <strong>${esc(t.title)}</strong>${t.artist ? `<p>${esc(t.artist)}</p>` : ''}</div></div>`;
+  }
+  const list = now ? tracks.filter((t,i) => !(i === 0 && t.title === (now.details || now.state))) : tracks.slice(1);
+  const hist = list.length ? `<div class="hist">${list.slice(0,10).map(t => `<div class="hi">${cover(t.cover)}<div class="t"><b>${esc(t.title)}</b>${t.artist?`<small>${esc(t.artist)}</small>`:''}</div><time>${new Date(t.time).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}</time></div>`).join('')}</div>` : '';
+  if (!card && !hist){ box.innerHTML = ''; return; }
+  box.innerHTML = `<div class="sub">Музыка${tracks.length ? `<small>сегодня ${tracks.length >= 10 ? '10+' : tracks.length} ${tracks.length === 1 ? 'трек' : tracks.length < 5 ? 'трека' : 'треков'}</small>` : ''}</div>${card}${hist}`;
+  tickNow();
+}
+function renderGames(){
+  const box = $('games'); if (!box || !ACT || !ACT.games) return;
+  const days = ACT.games.days || [], art = ACT.games.art || {};
+  const tot = {}; let all = 0;
+  days.forEach(d => Object.entries(d.games).forEach(([g, m]) => { tot[g] = (tot[g]||0) + m; all += m; }));
+  if (all < 1){ box.innerHTML = ''; return; }
+  const top = Object.entries(tot).sort((a,b) => b[1]-a[1]);
+  const shown = top.slice(0, 6), rest = top.slice(6).reduce((s, [,m]) => s + m, 0);
+  if (rest > 0) shown.push(['Другие игры', rest]);
+  const max = shown[0][1];
+  const today = days[days.length-1];
+  const todayMin = Object.values(today.games).reduce((a,b) => a+b, 0);
+  const perDay = g => days.map(d => d.games[g] || 0);
+  const wd = d => new Date(d + 'T12:00:00').toLocaleDateString('ru-RU', {weekday:'short'});
+  const bars = shown.map(([g, m]) => {
+    const pd = g === 'Другие игры' ? [] : perDay(g);
+    const tip = `<b>${esc(g)}</b><br>${hm(m)} за 7 дней${pd.length ? `<br>сегодня: ${hm(pd[6])}` : ''}`;
+    return `<div class="gb" data-tip-html="${esc(tip)}"><div class="nm">${art[g] ? `<img src="${esc(art[g])}" alt="" onerror="this.remove()">` : ''}<span>${esc(g)}</span></div>
+      <div class="tr"><div class="fl" style="width:${Math.max(1.5, m/max*100)}%"></div></div><div class="v">${hrs(m)}</div></div>`;
+  }).join('');
+  const dayTot = days.map(d => Object.values(d.games).reduce((a,b) => a+b, 0));
+  const dmax = Math.max(...dayTot, 1);
+  const cols = days.map((d,i) => {
+    const list = Object.entries(d.games).sort((a,b) => b[1]-a[1]).slice(0,4).map(([g,m]) => `${esc(g)} — ${hm(m)}`).join('<br>');
+    const tip = `<b>${new Date(d.date+'T12:00:00').toLocaleDateString('ru-RU',{weekday:'long', day:'numeric', month:'long'})}</b><br>${dayTot[i] ? hm(dayTot[i]) + '<br>' + list : 'не играл'}`;
+    return `<div class="gd${i === 6 ? ' today' : ''}" data-tip-html="${esc(tip)}"><u style="height:${dayTot[i] ? Math.max(3, dayTot[i]/dmax*100) : 0}%"></u></div>`;
+  }).join('');
+  box.innerHTML = `<div class="sub">Игры за неделю</div>
+    <div class="gtot"><div><b>${hrs(all)}</b><small>за 7 дней</small></div><div><b>${hrs(todayMin)}</b><small>сегодня</small></div><div><b>${top.length}</b><small>${top.length === 1 ? 'игра' : top.length < 5 ? 'игры' : 'игр'}</small></div></div>
+    <div class="gbars">${bars}</div>
+    <div class="sub" style="margin:26px 0 0"><small>часы по дням · наведи на столбик</small></div>
+    <div class="gdays">${cols}</div><div class="glab">${days.map(d => `<span>${wd(d.date)}</span>`).join('')}</div>`;
+}
+
 /* ================= данные из gist (их кладёт бот) ================= */
-const PFILE = "presence.json", VFILE = "visitors.json", STALE = 5*60*1000;
+const PFILE = "presence.json", VFILE = "visitors.json", AFILE = "activity.json", STALE = 5*60*1000;
 let gistId = store.get('presenceGist');
 async function findGist(){
   // Если gist со статусом несколько (старый бот и новая программа), берём тот, что обновлялся последним.
@@ -495,6 +616,7 @@ async function loadGist(){
       FRIENDS.forEach((f,i) => renderFriend(f, i, users[f.id] ? (alive ? users[f.id] : off(users[f.id])) : null));
     }
     if (files[VFILE]) renderGuests(JSON.parse(files[VFILE].content));
+    if (files[AFILE]){ ACT = JSON.parse(files[AFILE].content); renderMusic(); renderGames(); }
   } catch(e){}
 }
 loadGist();
