@@ -38,6 +38,8 @@ h1 i{font-style:normal;color:var(--acc)}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
 .chip{font:500 12px/1 Rubik,sans-serif;letter-spacing:.04em;color:var(--dim);border:1px solid var(--line2);padding:7px 11px}
 .chip b{color:var(--fg);font-weight:500;margin-right:6px}
+a.chip{transition:border-color .2s,color .2s}
+a.chip:hover{border-color:var(--acc);color:var(--fg)}
 .playing{display:none;margin-top:14px;font-size:13px;color:var(--acc)}
 .playing.on{display:block}
 .playing::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--acc);margin-right:9px;vertical-align:1px;animation:pulse 1.6s infinite}
@@ -62,6 +64,7 @@ h2::after{content:"";flex:1;height:1px;background:var(--line)}
 .who b{display:block;font:500 20px/1.2 Oswald,sans-serif;letter-spacing:.02em}
 .who small{color:var(--dim);font-size:13px}
 .acts{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-top:18px}
+.act{color:inherit;transition:border-color .2s}
 .act{display:flex;min-width:0;gap:14px;align-items:center;padding:12px;border:1px solid var(--line);background:var(--card)}
 .act img{width:56px;height:56px;object-fit:cover;flex:none;background:#111827}
 .act .t{min-width:0;flex:1}
@@ -126,6 +129,9 @@ h2::after{content:"";flex:1;height:1px;background:var(--line)}
 /* музыка */
 .sub{display:flex;align-items:baseline;gap:10px;margin:34px 0 14px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
 .sub small{letter-spacing:0;text-transform:none;color:var(--faint)}
+.track{color:inherit;transition:border-color .2s}
+a.track:hover,a.hi:hover,a.act:hover{border-color:var(--acc)}
+a.hi:hover{background:#0b1020}
 .track{display:flex;gap:18px;align-items:center;padding:16px;border:1px solid var(--line);background:var(--card)}
 .track img,.track .nocov{width:96px;height:96px;object-fit:cover;flex:none;background:#111827}
 .nocov{display:grid;place-items:center;color:var(--faint);font-size:30px}
@@ -189,8 +195,8 @@ footer b{color:var(--dim);font-weight:500}
   <h1 class="rv">Severe<i>Claw</i></h1>
   <p class="lead rv">Делаю программы для Windows и Android, темы в стиле Persona и всё, чего мне не хватает в готовых приложениях.</p>
   <div class="chips rv">
-    <span class="chip"><b>ESFP</b>Развлекатель</span>
-    <span class="chip"><b>3w2</b>Достигатор, крыло Помощника</span>
+    <a class="chip" href="https://www.16personalities.com/ru/lichnost-esfp" target="_blank" rel="noopener"><b>ESFP</b>Развлекатель ↗</a>
+    <a class="chip" href="https://boo.world/ru/enneagram/type-3w2" target="_blank" rel="noopener"><b>3w2</b>Достигатор, крыло Помощника ↗</a>
   </div>
   <div class="playing" id="playing"></div>
 </header>
@@ -355,7 +361,8 @@ function renderNow(){
   const acts = (P.activities||[]).filter(a => a.type !== 4 && a.type !== 2).map(a => ({
     kind:a.type, title:a.details || a.name,
     sub:[a.details ? a.state : "", a.details ? "" : a.state].filter(Boolean).join(" · ") || (a.details ? a.name : ""),
-    img: asset(a, a.assets && a.assets.large_image) || (a.art && a.art.header) || "", ts:a.timestamps, app:a.name }));
+    img: asset(a, a.assets && a.assets.large_image) || (a.art && a.art.header) || "", ts:a.timestamps, app:a.name,
+    url: a.type === 3 && (a.details || a.state) ? videoUrl(a) : null }));
   const box = $('acts');
   renderMusic();
   if (!acts.length){ box.innerHTML = (P.activities||[]).some(a => a.type === 2) ? "" : `<div class="idle-msg">${st === "offline" ? "Сейчас не в сети." : "Сейчас ничего не запущено."}</div>`; return; }
@@ -364,8 +371,9 @@ function renderNow(){
     const img = a.img ? `<img src="${esc(a.img)}" alt="" onerror="this.remove()">` : "";
     const bar = a.ts && a.ts.start && a.ts.end ? `<div class="bar"><u data-s="${a.ts.start}" data-e="${a.ts.end}"></u></div>` : "";
     const tm = a.ts && a.ts.start ? `<div class="tm" data-s="${a.ts.start}" ${a.ts.end?`data-e="${a.ts.end}"`:""}></div>` : "";
-    return `<div class="act rv in" style="--k:${color}">${img}<div class="t"><em>${label} · ${esc(a.app)}</em>
-      <strong>${esc(a.title)}</strong>${a.sub?`<p>${esc(a.sub)}</p>`:""}${bar}${tm}</div></div>`;
+    const tag = a.url ? `a href="${esc(a.url)}" target="_blank" rel="noopener" title="Открыть видео"` : 'div';
+    return `<${tag} class="act rv in" style="--k:${color}">${img}<div class="t"><em>${label} · ${esc(a.app)}${a.url ? ' ↗' : ''}</em>
+      <strong>${esc(a.title)}</strong>${a.sub?`<p>${esc(a.sub)}</p>`:""}${bar}${tm}</div></${a.url ? 'a' : 'div'}>`;
   }).join('');
   tickNow();
 }
@@ -523,6 +531,13 @@ window.onTgAuth = user => { ntfy({ t:"login", via:"telegram", user }); toast("О
 
 
 /* ================= музыка и игры ================= */
+const q = (...p) => encodeURIComponent(p.filter(Boolean).join(' ').trim());
+const musicUrl = (title, artist) => `https://music.youtube.com/search?q=${q(title, artist)}`;
+function videoUrl(a){
+  const title = a.details || a.state, chan = a.details ? a.state : null;
+  if (/rutube/i.test([a.name, a.details, a.state].join(' '))) return `https://rutube.ru/search/?query=${q(title)}`;
+  return `https://www.youtube.com/results?search_query=${q(title, chan)}`;
+}
 let ACT = null;
 const hm = min => { min = Math.round(min); const h = Math.floor(min/60), m = min%60; return h ? (m ? `${h} ч ${m} мин` : `${h} ч`) : `${m} мин`; };
 const hrs = min => (min/60).toLocaleString('ru-RU', {maximumFractionDigits: min < 600 ? 1 : 0}) + ' ч';
@@ -543,16 +558,16 @@ function renderMusic(){
   if (now){
     const t = now.timestamps;
     const bar = t && t.start && t.end ? `<div class="bar"><u data-s="${t.start}" data-e="${t.end}"></u></div><div class="tm" data-s="${t.start}" data-e="${t.end}"></div>` : '';
-    card = `<div class="track"><div>${cover(asset(now, now.assets && now.assets.large_image))}</div><div class="t">
+    card = `<a class="track" href="${musicUrl(now.details || now.state, now.details ? now.state : '')}" target="_blank" rel="noopener" title="Открыть в YouTube Music"><div>${cover(asset(now, now.assets && now.assets.large_image))}</div><div class="t">
       <em><span class="eq"><i></i><i></i><i></i></span>Сейчас слушаю · ${esc(now.name)}</em>
-      <strong>${esc(now.details || now.state)}</strong>${now.details && now.state ? `<p>${esc(now.state)}</p>` : ''}${bar}</div></div>`;
+      <strong>${esc(now.details || now.state)}</strong>${now.details && now.state ? `<p>${esc(now.state)}</p>` : ''}${bar}</div></a>`;
   } else if (tracks[0]){
     const t = tracks[0];
-    card = `<div class="track"><div>${cover(t.cover)}</div><div class="t"><em class="past">Последний трек · ${esc(ago(t.time))}</em>
-      <strong>${esc(t.title)}</strong>${t.artist ? `<p>${esc(t.artist)}</p>` : ''}</div></div>`;
+    card = `<a class="track" href="${musicUrl(t.title, t.artist)}" target="_blank" rel="noopener" title="Открыть в YouTube Music"><div>${cover(t.cover)}</div><div class="t"><em class="past">Последний трек · ${esc(ago(t.time))}</em>
+      <strong>${esc(t.title)}</strong>${t.artist ? `<p>${esc(t.artist)}</p>` : ''}</div></a>`;
   }
   const list = now ? tracks.filter((t,i) => !(i === 0 && t.title === (now.details || now.state))) : tracks.slice(1);
-  const hist = list.length ? `<div class="hist">${list.slice(0,10).map(t => `<div class="hi">${cover(t.cover)}<div class="t"><b>${esc(t.title)}</b>${t.artist?`<small>${esc(t.artist)}</small>`:''}</div><time>${new Date(t.time).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}</time></div>`).join('')}</div>` : '';
+  const hist = list.length ? `<div class="hist">${list.slice(0,10).map(t => `<a class="hi" href="${musicUrl(t.title, t.artist)}" target="_blank" rel="noopener" title="Открыть в YouTube Music">${cover(t.cover)}<div class="t"><b>${esc(t.title)}</b>${t.artist?`<small>${esc(t.artist)}</small>`:''}</div><time>${new Date(t.time).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}</time></a>`).join('')}</div>` : '';
   if (!card && !hist){ box.innerHTML = ''; return; }
   box.innerHTML = `<div class="sub">Музыка${tracks.length ? `<small>сегодня ${tracks.length >= 10 ? '10+' : tracks.length} ${tracks.length === 1 ? 'трек' : tracks.length < 5 ? 'трека' : 'треков'}</small>` : ''}</div>${card}${hist}`;
   tickNow();
