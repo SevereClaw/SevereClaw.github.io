@@ -288,6 +288,12 @@ let FRIENDS = [
   { id:"983770743198347294", name:"" },
 ];
 const GH_USER = "SevereClaw";
+/* свои картинки для игр, которых нет в Steam (название — как в Discord) */
+const GAME_ART = {
+  "osu!":       { background: "art/osu.jpg",        header: "art/osu-s.jpg" },
+  "NekoBoxP3R": { background: "art/nekoboxp3r.jpg", header: "art/nekoboxp3r-s.jpg" },
+};
+const ownArt = name => GAME_ART[Object.keys(GAME_ART).find(k => k.toLowerCase() === String(name || "").toLowerCase())];
 const NTFY_TOPIC = "sc-site-u1bacv0rngvi2x";   // этот же топик стоит в config.json бота
 const SITE_URL = "https://severeclaw.github.io/";
 
@@ -344,6 +350,7 @@ function renderNow(){
   $('st').className = st;
   const custom = (P.activities||[]).find(a => a.type === 4);
   $('stt').textContent = ST_NAME[st] + (custom && custom.state ? " · " + custom.state : "");
+  (P.activities||[]).forEach(a => { if (a.type === 0 && ownArt(a.name)) a.art = Object.assign({}, a.art, ownArt(a.name), { hero: null, appid: "own:" + a.name }); });
   setGameBg((P.activities||[]).find(a => a.type === 0));
   const acts = (P.activities||[]).filter(a => a.type !== 4 && a.type !== 2).map(a => ({
     kind:a.type, title:a.details || a.name,
@@ -567,7 +574,7 @@ function renderGames(){
   const bars = shown.map(([g, m]) => {
     const pd = g === 'Другие игры' ? [] : perDay(g);
     const tip = `<b>${esc(g)}</b><br>${hm(m)} за 7 дней${pd.length ? `<br>сегодня: ${hm(pd[6])}` : ''}`;
-    return `<div class="gb" data-tip-html="${esc(tip)}"><div class="nm">${art[g] ? `<img src="${esc(art[g])}" alt="" onerror="this.remove()">` : ''}<span>${esc(g)}</span></div>
+    return `<div class="gb" data-tip-html="${esc(tip)}"><div class="nm">${(ownArt(g)?.header || art[g]) ? `<img src="${esc(ownArt(g)?.header || art[g])}" alt="" onerror="this.remove()">` : ''}<span>${esc(g)}</span></div>
       <div class="tr"><div class="fl" style="width:${Math.max(1.5, m/max*100)}%"></div></div><div class="v">${hrs(m)}</div></div>`;
   }).join('');
   const dayTot = days.map(d => Object.values(d.games).reduce((a,b) => a+b, 0));
