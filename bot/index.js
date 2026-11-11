@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { Client, GatewayIntentBits, Events } = require('discord.js');
+const { Client, GatewayIntentBits, Events, EmbedBuilder } = require('discord.js');
 
 const CFG_PATH = path.join(__dirname, 'config.json');
 if (!fs.existsSync(CFG_PATH)) {
@@ -40,6 +40,7 @@ for (const k of ['discordToken', 'githubToken', 'guildId']) {
 }
 const IDS = [cfg.ownerId, ...(cfg.friends || [])].filter(Boolean);
 const FILE = 'presence.json';
+const VFILE = 'visitors.json';
 const MIN_GAP = 15_000;      // не чаще раза в 15 секунд
 const HEARTBEAT = 120_000;   // раз в 2 минуты, даже если ничего не поменялось
 
@@ -144,16 +145,42 @@ async function gh(method, url, body) {
   return r.json();
 }
 
-async function ensureGist(content) {
+async function ensureGist(files) {
   if (cfg.gistId) return;
   const g = await gh('POST', '/gists', {
-    description: 'SevereClaw: статус для severeclaw.github.io',
+    description: 'SevereClaw: статус и гости для severeclaw.github.io',
     public: true,
-    files: { [FILE]: { content } },
+    files: Object.fromEntries(Object.entries(files).map(([k, v]) => [k, { content: v }])),
   });
   cfg.gistId = g.id;
-  fs.writeFileSync(CFG_PATH, JSON.stringify(cfg, null, 2));
+  saveCfg();
   log('Создал gist', g.html_url);
+}
+function saveCfg() {
+  const out = Object.assign({}, cfg);
+  fs.writeFileSync(CFG_PATH, JSON.stringify(out, null, 2));
+}
+
+// ---------- гости ----------
+const VIS_PATH = path.join(__dirname, 'visitors-data.json');
+let vis = { total: 0, days: {}, srcDays: {}, guests: [] };
+try { vis = Object.assign(vis, JSON.parse(fs.readFileSync(VIS_PATH, 'utf8'))); } catch (e) {}
+const today = () => new Date().toLocaleDateString('sv-SE');      // 2026-11-11, по времени ноутбука
+let visDirty = true;
+function saveVis() { fs.writeFileSync(VIS_PATH, JSON.stringify(vis)); visDirty = true; schedule(); }
+function visitorsFile() {
+  const d = today();
+  return JSON.stringify({
+    updated: Date.now(),
+    stats: { total: vis.total, today: vis.days[d] || 0, bySourceToday: vis.srcDays[d] || {} },
+    guests: vis.guests.slice(0, 60),
+  });
+}
+function siteInfo() {
+  return {
+    discordClientId: cfg.discordClientSecret && client.application ? client.application.id : null,
+    telegramBot: cfg.telegramBotToken && cfg.telegramBotName ? cfg.telegramBotName.replace(/^@/, '') : null,
+  };
 }
 
 let lastUsersJson = '';
@@ -164,14 +191,15 @@ async function publish(force = false, online = true) {
   const users = buildUsers();
   logOwner(users);
   const usersJson = JSON.stringify(users);
-  if (!force && usersJson === lastUsersJson) return;
-  const content = JSON.stringify({ updated: Date.now(), bot: online, users });
+  if (!force && usersJson === lastUsersJson && !visDirty) return;
+  const files = { [FILE]: JSON.stringify({ updated: Date.now(), bot: online, site: siteInfo(), users }) };
+  if (visDirty || force) files[VFILE] = visitorsFile();
   try {
-    if (!cfg.gistId) await ensureGist(content);
-    else await gh('PATCH', `/gists/${cfg.gistId}`, { files: { [FILE]: { content } } });
+    if (!cfg.gistId) await ensureGist(files);
+    else await gh('PATCH', `/gists/${cfg.gistId}`, { files: Object.fromEntries(Object.entries(files).map(([k, v]) => [k, { content: v }])) });
     lastUsersJson = usersJson;
+    visDirty = false;
     lastSent = Date.now();
-    if (!force) log('Статус обновлён');
   } catch (e) {
     log('Не смог обновить gist:', e.message);
   }
@@ -181,6 +209,114 @@ function schedule() {
   if (timer) return;
   const wait = Math.max(0, lastSent + MIN_GAP - Date.now());
   timer = setTimeout(() => { timer = null; publish(); }, wait);
+}
+
+// ---------- сообщения в Discord ----------
+let logChannel = null;
+let sentThisMinute = 0, minuteStart = Date.now(), skipped = 0;
+async function say(payload) {
+  if (!logChannel) return;
+  if (Date.now() - minuteStart > 60_000) {
+    if (skipped) logChannel.send(`…и ещё ${skipped} заход(ов) за минуту, не стал спамить.`).catch(() => {});
+    minuteStart = Date.now(); sentThisMinute = 0; skipped = 0;
+  }
+  if (++sentThisMinute > 15) { skipped++; return; }
+  try { await logChannel.send(payload); } catch (e) { log('Не смог написать в канал:', e.message); }
+}
+
+const SRC_RU = { tg: 'из Telegram', ds: 'из Discord', yt: 'с YouTube', steam: 'из Steam', gh: 'с GitHub', search: 'из поиска', direct: 'напрямую', other: 'с другого сайта' };
+const DEV_OK = ['Android', 'iOS', 'Windows', 'Mac', 'Linux', '?'];
+function onVisit(m) {
+  const src = SRC_RU[m.src] ? m.src : 'other';
+  const dev = DEV_OK.includes(m.dev) ? m.dev : '?';
+  const d = today();
+  vis.total++;
+  vis.days[d] = (vis.days[d] || 0) + 1;
+  vis.srcDays[d] = vis.srcDays[d] || {};
+  vis.srcDays[d][src] = (vis.srcDays[d][src] || 0) + 1;
+  for (const k of Object.keys(vis.days)) if (k < new Date(Date.now() - 40 * 864e5).toLocaleDateString('sv-SE')) { delete vis.days[k]; delete vis.srcDays[k]; }
+  saveVis();
+  say(`👁 Кто-то зашёл на сайт ${SRC_RU[src]} · ${dev}${m.back ? ' · уже был раньше' : ''} · сегодня ${vis.days[d]}-й`);
+  log(`Гость ${SRC_RU[src]}, ${dev}`);
+}
+
+function addGuest(g) {
+  vis.guests = [g, ...vis.guests.filter(x => !(x.via === g.via && x.id === g.id))].slice(0, 100);
+  saveVis();
+  const via = g.via === 'discord' ? 'Discord' : 'Telegram';
+  say({ embeds: [new EmbedBuilder().setColor(0x66e0ff).setTitle(`✅ ${g.name} отметился на сайте`)
+    .setDescription(`через ${via}${g.handle ? ` · ${g.handle}` : ''}`).setThumbnail(g.avatar || null).setTimestamp(new Date())] });
+  log(`Отметился ${g.name} (${via})`);
+}
+
+const usedCodes = new Set();
+async function onDiscordLogin(code) {
+  if (!cfg.discordClientSecret || typeof code !== 'string' || code.length > 100 || usedCodes.has(code)) return;
+  usedCodes.add(code);
+  try {
+    const tr = await fetch('https://discord.com/api/v10/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ client_id: client.application.id, client_secret: cfg.discordClientSecret,
+        grant_type: 'authorization_code', code, redirect_uri: cfg.siteUrl || 'https://severeclaw.github.io/' }),
+    });
+    const tok = await tr.json();
+    if (!tok.access_token) return log('Discord-отметка не прошла:', JSON.stringify(tok).slice(0, 200));
+    const u = await (await fetch('https://discord.com/api/v10/users/@me', { headers: { Authorization: `Bearer ${tok.access_token}` } })).json();
+    if (!u.id) return;
+    addGuest({ via: 'discord', id: u.id, name: u.global_name || u.username, handle: '@' + u.username,
+      avatar: u.avatar ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=128` : `https://cdn.discordapp.com/embed/avatars/${Number((BigInt(u.id) >> 22n) % 6n)}.png`,
+      url: `https://discord.com/users/${u.id}`, time: Date.now() });
+  } catch (e) { log('Discord-отметка: ошибка', e.message); }
+}
+
+const crypto = require('crypto');
+function onTelegramLogin(user) {
+  if (!cfg.telegramBotToken || !user || typeof user !== 'object' || !user.hash) return;
+  const { hash, ...data } = user;
+  const check = Object.keys(data).sort().map(k => `${k}=${data[k]}`).join('\n');
+  const secret = crypto.createHash('sha256').update(cfg.telegramBotToken).digest();
+  const hmac = crypto.createHmac('sha256', secret).update(check).digest('hex');
+  if (hmac !== hash) return log('Telegram-отметка с неверной подписью, пропускаю');
+  if (Date.now() / 1000 - Number(data.auth_date) > 86400) return log('Telegram-отметка устарела, пропускаю');
+  const name = [data.first_name, data.last_name].filter(Boolean).join(' ') || data.username || 'Гость';
+  addGuest({ via: 'telegram', id: String(data.id), name, handle: data.username ? '@' + data.username : '',
+    avatar: data.photo_url || null, url: data.username ? `https://t.me/${data.username}` : null, time: Date.now() });
+}
+
+// ---------- приём событий с сайта через ntfy ----------
+const TOPIC = cfg.ntfyTopic || 'sc-site-u1bacv0rngvi2x';
+let ntfySince = cfg.ntfySince || '1h';
+async function listen() {
+  for (;;) {
+    try {
+      const r = await fetch(`https://ntfy.sh/${TOPIC}/json?since=${encodeURIComponent(ntfySince)}`);
+      if (!r.ok) throw new Error('ntfy ' + r.status);
+      log('Слушаю сайт (ntfy)');
+      let buf = '';
+      const dec = new TextDecoder();
+      for await (const chunk of r.body) {
+        buf += dec.decode(chunk, { stream: true });
+        let i;
+        while ((i = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, i); buf = buf.slice(i + 1);
+          if (!line.trim()) continue;
+          let ev; try { ev = JSON.parse(line); } catch (e) { continue; }
+          if (ev.event !== 'message') continue;
+          ntfySince = ev.id;
+          if (cfg.ntfySince !== ev.id) { cfg.ntfySince = ev.id; saveCfg(); }
+          let m; try { m = JSON.parse(ev.message); } catch (e) { continue; }
+          if (m.t === 'visit') onVisit(m);
+          else if (m.t === 'login' && m.via === 'discord') onDiscordLogin(m.code);
+          else if (m.t === 'login' && m.via === 'telegram') onTelegramLogin(m.user);
+        }
+      }
+      throw new Error('соединение закрыто');
+    } catch (e) {
+      log('ntfy:', e.message, '— переподключаюсь через 10 с');
+      await new Promise(r => setTimeout(r, 10_000));
+    }
+  }
 }
 
 client.once(Events.ClientReady, async () => {
@@ -193,8 +329,15 @@ client.once(Events.ClientReady, async () => {
   const missing = IDS.filter(id => !guild.members.cache.has(id));
   log(`Вошёл как ${client.user.tag}, сервер «${guild.name}». Слежу за ${IDS.length - missing.length} из ${IDS.length}.`);
   if (missing.length) log('Нет на сервере (их статус не будет виден):', missing.join(', '));
+  if (cfg.logChannelId && /^\d{17,20}$/.test(String(cfg.logChannelId).trim())) {
+    logChannel = await client.channels.fetch(String(cfg.logChannelId)).catch(() => null);
+    if (!logChannel || !logChannel.isTextBased()) { log('Не нашёл канал logChannelId — про гостей буду писать только сюда'); logChannel = null; }
+    else log(`Про гостей пишу в #${logChannel.name}`);
+  }
+  await client.application.fetch().catch(() => {});
   await publish(true);
   setInterval(() => publish(true), HEARTBEAT);
+  listen();
 });
 
 client.on(Events.PresenceUpdate, (_old, p) => { if (p.guild && p.guild.id === guild?.id && IDS.includes(p.userId)) schedule(); });
