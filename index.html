@@ -592,7 +592,7 @@ function renderGames(){
 }
 
 /* ================= данные из gist (их кладёт бот) ================= */
-const PFILE = "presence.json", VFILE = "visitors.json", AFILE = "activity.json", STALE = 5*60*1000;
+const PFILE = "presence.json", VFILE = "visitors.json", AFILE = "activity.json", STALE = 12*60*1000;
 let gistId = store.get('presenceGist');
 async function findGist(){
   // Если gist со статусом несколько (старый бот и новая программа), берём тот, что обновлялся последним.
