@@ -50,6 +50,55 @@ const client = new Client({
 const log = (...a) => console.log(new Date().toLocaleTimeString('ru-RU'), ...a);
 const ms = d => (d ? new Date(d).getTime() : undefined);
 
+// ---------- арт игры из Steam ----------
+// Discord знает только название игры, поэтому ищем её в магазине Steam
+// и берём оттуда фон страницы, баннер библиотеки и шапку.
+const artCache = new Map();          // имя игры -> арт или null (не нашли)
+const norm = s => String(s).toLowerCase().replace(/[™®©:'’!?.,\-–—]/g, ' ').replace(/\s+/g, ' ').trim();
+async function steam(url) {
+  const r = await fetch(url, { headers: { 'User-Agent': 'severeclaw-presence-bot' } });
+  if (!r.ok) throw new Error('Steam ' + r.status);
+  return r.json();
+}
+async function lookupArt(name) {
+  if (artCache.has(name)) return;
+  artCache.set(name, null);
+  const manual = cfg.gameArt && cfg.gameArt[name];
+  if (manual) { artCache.set(name, { background: manual }); schedule(); return; }
+  try {
+    const s = await steam(`https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(name)}&l=english&cc=US`);
+    const items = s.items || [];
+    const q = norm(name);
+    const hit = items.find(i => norm(i.name) === q)
+      || items.find(i => norm(i.name).startsWith(q) || q.startsWith(norm(i.name)));
+    if (!hit) { log(`Арт: «${name}» не нашёл в Steam (можно задать вручную в gameArt)`); return; }
+    const d = await steam(`https://store.steampowered.com/api/appdetails?appids=${hit.id}&l=english`);
+    const data = d[hit.id] && d[hit.id].success ? d[hit.id].data : {};
+    artCache.set(name, {
+      appid: hit.id,
+      hero: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${hit.id}/library_hero.jpg`,
+      background: data.background_raw || data.background || null,
+      header: data.header_image || null,
+    });
+    log(`Арт: «${name}» → Steam ${hit.id} (${hit.name})`);
+    schedule();
+  } catch (e) {
+    artCache.delete(name);           // попробуем ещё раз при следующем обновлении
+    log(`Арт: не смог спросить Steam про «${name}»:`, e.message);
+  }
+}
+
+const KIND_RU = { 0: 'Играет', 1: 'Стримит', 2: 'Слушает', 3: 'Смотрит', 4: 'Статус', 5: 'Соревнуется' };
+let lastOwnerLine = '';
+function logOwner(users) {
+  const u = users[cfg.ownerId];
+  let line;
+  if (!u) line = 'тебя нет на сервере — статус не виден';
+  else if (!u.activities.length) line = `${u.discord_status}, Discord не передаёт ни одной активности`;
+  else line = u.discord_status + ' | ' + u.activities.map(a => `${KIND_RU[a.type] || a.type}: ${a.type === 4 ? a.state : a.name}`).join(' | ');
+  if (line !== lastOwnerLine) { lastOwnerLine = line; log('Ты сейчас:', line); }
+}
+
 function snapshotUser(member) {
   const u = member.user;
   const p = member.presence;
@@ -64,6 +113,7 @@ function snapshotUser(member) {
       application_id: a.applicationId || null,
       timestamps: a.timestamps ? { start: ms(a.timestamps.start), end: ms(a.timestamps.end) } : null,
       assets: a.assets ? { large_image: a.assets.largeImage || null } : null,
+      art: a.type === 0 ? (lookupArt(a.name), artCache.get(a.name) || null) : undefined,
     })),
   };
 }
@@ -112,6 +162,7 @@ let timer = null;
 
 async function publish(force = false, online = true) {
   const users = buildUsers();
+  logOwner(users);
   const usersJson = JSON.stringify(users);
   if (!force && usersJson === lastUsersJson) return;
   const content = JSON.stringify({ updated: Date.now(), bot: online, users });
