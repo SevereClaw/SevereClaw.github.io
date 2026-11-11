@@ -609,9 +609,14 @@ function renderGames(){
 /* ================= данные из gist (их кладёт бот) ================= */
 const PFILE = "presence.json", VFILE = "visitors.json", AFILE = "activity.json", STALE = 12*60*1000;
 let gistId = store.get('presenceGist');
+// Сам список gist — запрос к API GitHub (60 в час на IP без входа, через VPN их делят многие),
+// поэтому он делается редко. Файлы читаются по прямой ссылке, у неё такого лимита нет.
+let apiLimited = false, lastFind = 0;
 async function findGist(){
-  // Если gist со статусом несколько (старый бот и новая программа), берём тот, что обновлялся последним.
-  const r = await fetch(`https://api.github.com/users/${GH_USER}/gists?per_page=100`, { cache: "no-store" });
+  lastFind = Date.now();
+  let r;
+  try { r = await fetch(`https://api.github.com/users/${GH_USER}/gists?per_page=100`, { cache: "no-store" }); } catch(e){ return null; }
+  apiLimited = r.status === 403 || r.status === 429;
   if (!r.ok) return null;
   const list = (await r.json()).filter(g => g.files && g.files[PFILE])
     .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
@@ -619,41 +624,45 @@ async function findGist(){
   if (id) store.set('presenceGist', id); else store.del('presenceGist');
   return id;
 }
-let lastFind = 0;
 function noStatus(msg){ $('stt').textContent = msg; $('acts').innerHTML = ""; }
+const rawFile = (id, f) => fetch(`https://gist.githubusercontent.com/${GH_USER}/${id}/raw/${f}?t=${Date.now()}`, { cache: "no-store" })
+  .then(r => r.ok ? r.text() : null).catch(() => null);
 async function loadGist(){
   try {
-    if (!gistId) gistId = await findGist();
-    if (!gistId) return noStatus("статус пока не настроен");
-    const r = await fetch(`https://api.github.com/gists/${gistId}`);
-    if (r.status === 404){ gistId = null; store.del('presenceGist'); return; }
-    if (!r.ok) return;
-    const files = (await r.json()).files || {};
-    if (files[PFILE]){
-      const data = JSON.parse(files[PFILE].content);
-      SITE = data.site || {};
-      if (Array.isArray(SITE.friends)) buildFriends(SITE.friends.filter(f => /^\d{17,20}$/.test(f.id)));
-      renderSign();
-      const alive = data.bot !== false && Date.now() - data.updated < STALE;
-      if (!alive && Date.now() - lastFind > 120000){
-        lastFind = Date.now();
-        const fresh = await findGist();
-        if (fresh && fresh !== gistId){ gistId = fresh; return loadGist(); }
-      }
-      const users = data.users || {};
-      const off = u => u && Object.assign({}, u, {discord_status:"offline", activities:[]});
-      P = alive ? users[DISCORD_ID] : off(users[DISCORD_ID]);
-      if (P) renderNow(); else noStatus("статус недоступен");
-      if (P && !alive){
-        const t = new Date(data.updated), same = t.toDateString() === new Date().toDateString();
-        $('stt').textContent = "статус не обновлялся с " + (same ? "" : t.toLocaleDateString('ru-RU',{day:'numeric',month:'short'}) + " ") + t.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
-        $('acts').innerHTML = '<div class="idle-msg">Программа CyberSite сейчас не на связи, поэтому не видно, что я делаю.</div>';
-      }
-      FRIENDS.forEach((f,i) => renderFriend(f, i, users[f.id] ? (alive ? users[f.id] : off(users[f.id])) : null));
+    if (!gistId && Date.now() - lastFind > 60000) gistId = await findGist();
+    if (!gistId) return noStatus(apiLimited ? "GitHub временно ограничил запросы, статус появится через несколько минут" : "статус пока не настроен");
+    let [pTxt, vTxt, aTxt] = await Promise.all([rawFile(gistId, PFILE), rawFile(gistId, VFILE), rawFile(gistId, AFILE)]);
+    if (pTxt === null){                                  // запасной путь: через API, как раньше
+      const r = await fetch(`https://api.github.com/gists/${gistId}`).catch(() => null);
+      if (r && r.ok){ const f = (await r.json()).files || {}; pTxt = f[PFILE]?.content ?? null; vTxt = f[VFILE]?.content ?? null; aTxt = f[AFILE]?.content ?? null; }
+      else if (r && (r.status === 403 || r.status === 429)) apiLimited = true;
     }
-    if (files[VFILE]) renderGuests(JSON.parse(files[VFILE].content));
-    if (files[AFILE]){ ACT = JSON.parse(files[AFILE].content); renderMusic(); renderGames(); }
-  } catch(e){}
+    if (pTxt === null){                                  // gist удалён или заменён новым
+      if (Date.now() - lastFind > 60000){ const fresh = await findGist(); if (fresh && fresh !== gistId){ gistId = fresh; return loadGist(); } }
+      return noStatus(apiLimited ? "GitHub временно ограничил запросы, статус появится через несколько минут" : "статус недоступен");
+    }
+    const data = JSON.parse(pTxt);
+    SITE = data.site || {};
+    if (Array.isArray(SITE.friends)) buildFriends(SITE.friends.filter(f => /^\d{17,20}$/.test(f.id)));
+    renderSign();
+    const alive = data.bot !== false && Date.now() - data.updated < STALE;
+    if (!alive && Date.now() - lastFind > 10*60000){     // вдруг программа пишет уже в другой gist
+      const fresh = await findGist();
+      if (fresh && fresh !== gistId){ gistId = fresh; return loadGist(); }
+    }
+    const users = data.users || {};
+    const off = u => u && Object.assign({}, u, {discord_status:"offline", activities:[]});
+    P = alive ? users[DISCORD_ID] : off(users[DISCORD_ID]);
+    if (P) renderNow(); else noStatus("статус недоступен");
+    if (P && !alive){
+      const t = new Date(data.updated), same = t.toDateString() === new Date().toDateString();
+      $('stt').textContent = "статус не обновлялся с " + (same ? "" : t.toLocaleDateString('ru-RU',{day:'numeric',month:'short'}) + " ") + t.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+      $('acts').innerHTML = '<div class="idle-msg">Программа CyberSite сейчас не на связи, поэтому не видно, что я делаю.</div>';
+    }
+    FRIENDS.forEach((f,i) => renderFriend(f, i, users[f.id] ? (alive ? users[f.id] : off(users[f.id])) : null));
+    if (vTxt) renderGuests(JSON.parse(vTxt));
+    if (aTxt){ ACT = JSON.parse(aTxt); renderMusic(); renderGames(); }
+  } catch(e){ console.warn('loadGist', e); }
 }
 loadGist();
 setInterval(loadGist, 30000);
