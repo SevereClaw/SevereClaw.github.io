@@ -208,7 +208,7 @@ footer b{color:var(--cyan)}
   <section id="now">
     <h2>Сейчас <em>NOW</em></h2>
     <div class="now reveal">
-      <div class="me"><img id="av" alt="" src="https://api.lanyard.rest/326495406970109962.png"><i id="st"></i></div>
+      <div class="me"><img id="av" alt="" src="https://cdn.discordapp.com/embed/avatars/0.png"><i id="st"></i></div>
       <div class="who"><b id="nm">SevereClaw</b><small id="stt">загрузка…</small></div>
       <div class="acts" id="acts"></div>
     </div>
@@ -326,7 +326,7 @@ function tick(){
 tick(); setInterval(tick, 1000);
 document.getElementById('yr').textContent = new Date().getFullYear();
 
-/* ===== СЕЙЧАС: живой статус из Discord через Lanyard ===== */
+/* ===== СЕЙЧАС: живой статус из Discord ===== */
 const DISCORD_ID = "326495406970109962";
 const ST_NAME = {online:"в сети", idle:"отошёл", dnd:"не беспокоить", offline:"не в сети"};
 const KIND = {0:["Играет","#00c8ff"],1:["Стримит","#9146ff"],2:["Слушает","#1ed760"],3:["Смотрит","#e8102a"],5:["Соревнуется","#f0b232"]};
@@ -384,31 +384,9 @@ function tickNow(){
 }
 setInterval(tickNow, 1000);
 
-async function pollNow(){
-  try {
-    const r = await fetch(`https://api.lanyard.rest/v1/users/${DISCORD_ID}`);
-    const j = await r.json();
-    if (j.success){ P = j.data; renderNow(); }
-    else document.getElementById('stt').textContent = "статус недоступен";
-  } catch(e){ document.getElementById('stt').textContent = "статус недоступен"; }
-}
-function socketNow(){
-  let ws, hb;
-  try { ws = new WebSocket("wss://api.lanyard.rest/socket"); } catch(e){ return false; }
-  ws.onmessage = e => {
-    const m = JSON.parse(e.data);
-    if (m.op === 1){
-      hb = setInterval(() => ws.readyState === 1 && ws.send(JSON.stringify({op:3})), m.d.heartbeat_interval);
-      ws.send(JSON.stringify({op:2, d:{subscribe_to_id: DISCORD_ID}}));
-    } else if (m.op === 0 && (m.t === "INIT_STATE" || m.t === "PRESENCE_UPDATE")){ P = m.d; renderNow(); }
-  };
-  ws.onclose = () => { clearInterval(hb); setTimeout(socketNow, 5000); };
-  return true;
-}
-pollNow();
-socketNow();
 
-/* ===== ДРУЗЬЯ — Discord ID и (по желанию) имя, если Lanyard его не знает ===== */
+
+/* ===== ДРУЗЬЯ — Discord ID и (по желанию) имя, если бот его не видит ===== */
 const FRIENDS = [
   { id:"952898114321281084", name:"" },
   { id:"552120303153578015", name:"" },
@@ -441,16 +419,40 @@ function renderFriend(f, i, d){
 document.getElementById('fr').innerHTML = FRIENDS.map((f,i) =>
   `<a class="fr reveal in" id="fr${i}" href="https://discord.com/users/${f.id}" target="_blank" rel="noopener"></a>`).join('');
 FRIENDS.forEach((f,i) => renderFriend(f, i, null));
-async function pollFriends(){
-  await Promise.all(FRIENDS.map(async (f,i) => {
-    try {
-      const j = await (await fetch(`https://api.lanyard.rest/v1/users/${f.id}`)).json();
-      if (j.success) renderFriend(f, i, j.data);
-    } catch(e){}
-  }));
+/* ===== статусы: бот на ноутбуке кладёт их в публичный gist ===== */
+const GH_USER = "SevereClaw", PFILE = "presence.json", STALE = 5*60*1000;
+let gistId = null;
+try { gistId = localStorage.getItem('presenceGist'); } catch(e){}
+async function findGist(){
+  const r = await fetch(`https://api.github.com/users/${GH_USER}/gists?per_page=100`);
+  if (!r.ok) return null;
+  const g = (await r.json()).find(g => g.files && g.files[PFILE]);
+  if (g){ try { localStorage.setItem('presenceGist', g.id); } catch(e){} }
+  return g ? g.id : null;
 }
-pollFriends();
-setInterval(pollFriends, 30000);
+function noStatus(msg){
+  document.getElementById('stt').textContent = msg;
+  document.getElementById('acts').innerHTML = "";
+}
+async function loadPresence(){
+  try {
+    if (!gistId) gistId = await findGist();
+    if (!gistId) return noStatus("статус пока не настроен");
+    const r = await fetch(`https://api.github.com/gists/${gistId}`);
+    if (r.status === 404){ gistId = null; try { localStorage.removeItem('presenceGist'); } catch(e){} return; }
+    if (!r.ok) return;
+    const data = JSON.parse((await r.json()).files[PFILE].content);
+    const alive = data.bot !== false && Date.now() - data.updated < STALE;
+    const users = data.users || {};
+    const off = u => u && Object.assign({}, u, {discord_status:"offline", activities:[]});
+    P = alive ? users[DISCORD_ID] : off(users[DISCORD_ID]);
+    if (P) renderNow(); else noStatus("статус недоступен");
+    FRIENDS.forEach((f,i) => renderFriend(f, i, users[f.id] ? (alive ? users[f.id] : off(users[f.id])) : null));
+  } catch(e){}
+}
+loadPresence();
+setInterval(loadPresence, 30000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) loadPresence(); });
 </script>
 </body>
 </html>
