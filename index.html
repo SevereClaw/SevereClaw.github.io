@@ -279,7 +279,7 @@ const PROJECTS = [
     text:"Форк WinDirStat с неоновой темой «Киберпанк»: светящаяся карта занятого места, неоновая диаграмма и сканер вместо Pac-Man." },
 ];
 const DISCORD_ID = "326495406970109962";
-const FRIENDS = [
+let FRIENDS = [
   { id:"952898114321281084", name:"" },
   { id:"552120303153578015", name:"" },
   { id:"813521412165861397", name:"" },
@@ -406,8 +406,16 @@ function renderFriend(f, i, d){
   $('fr' + i).innerHTML = `<div class="ava"><img src="${esc(u ? userAv(u) : defAv(f.id))}" alt=""><i class="${st}"></i></div>
     <div class="t"><b>${esc(name)}</b><small class="${k?'k':''}" ${k?`style="--k:${k}"`:''}>${esc(line)}</small></div><span class="ar">→</span>`;
 }
-$('fr').innerHTML = FRIENDS.map((f,i) => `<a class="row" id="fr${i}" href="https://discord.com/users/${f.id}" target="_blank" rel="noopener"></a>`).join('');
-FRIENDS.forEach((f,i) => renderFriend(f, i, null));
+let frKey = "";
+function buildFriends(list){
+  const key = JSON.stringify(list);
+  if (key === frKey) return;
+  frKey = key; FRIENDS = list;
+  $('fr').innerHTML = FRIENDS.length ? FRIENDS.map((f,i) => `<a class="row" id="fr${i}" href="https://discord.com/users/${esc(f.id)}" target="_blank" rel="noopener"></a>`).join('')
+    : `<div class="idle-msg" style="margin:0;padding:14px">Пока пусто.</div>`;
+  FRIENDS.forEach((f,i) => renderFriend(f, i, null));
+}
+buildFriends(FRIENDS);
 
 /* ================= гости ================= */
 const VIA = { discord:["Discord","ds"], telegram:["Telegram","tg"] };
@@ -602,6 +610,7 @@ async function loadGist(){
     if (files[PFILE]){
       const data = JSON.parse(files[PFILE].content);
       SITE = data.site || {};
+      if (Array.isArray(SITE.friends)) buildFriends(SITE.friends.filter(f => /^\d{17,20}$/.test(f.id)));
       renderSign();
       const alive = data.bot !== false && Date.now() - data.updated < STALE;
       if (!alive && Date.now() - lastFind > 120000){
