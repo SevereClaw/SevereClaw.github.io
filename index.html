@@ -157,6 +157,20 @@ h2::after{content:"";flex:1;height:3px;background:linear-gradient(90deg,var(--cy
 .idle-msg{grid-column:1/-1;color:var(--mute);font-size:15px}
 @media (max-width:560px){.now{grid-template-columns:1fr;padding:22px}.acts{grid-template-columns:1fr}}
 
+/* ---------- друзья ---------- */
+.friends{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.fr{position:relative;display:flex;gap:14px;align-items:center;padding:16px 18px;
+  background:linear-gradient(110deg,rgba(11,63,168,.5),rgba(6,23,63,.85));border:1px solid rgba(0,200,255,.18);
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%);transition:transform .2s,border-color .2s}
+.fr:hover{transform:translateY(-4px);border-color:var(--cyan)}
+.fr .me{width:64px;height:64px;flex:none}
+.fr .me i{width:16px;height:16px;border-width:3px;right:0;bottom:2px}
+.fr .me i.unknown{display:none}
+.fr .t{min-width:0}
+.fr b{display:block;font:700 20px/1.1 Oswald,sans-serif;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr small{display:block;margin-top:5px;font-size:13px;color:#b9cde6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr small.k{color:var(--k,var(--mute))}
+
 footer{max-width:1200px;margin:0 auto;padding:40px 6vw 60px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;
   font:500 14px Oswald,sans-serif;letter-spacing:.25em;text-transform:uppercase;color:var(--mute);border-top:1px solid rgba(0,200,255,.15)}
 footer b{color:var(--cyan)}
@@ -185,6 +199,7 @@ footer b{color:var(--cyan)}
 <nav><div class="in">
   <a href="#now">Сейчас</a>
   <a href="#links">Связь</a>
+  <a href="#friends">Друзья</a>
   <a href="#projects">Проекты</a>
   <a href="https://github.com/SevereClaw" target="_blank" rel="noopener">GitHub</a>
 </div></nav>
@@ -202,6 +217,11 @@ footer b{color:var(--cyan)}
   <section id="links">
     <h2>Связь <em>SOCIAL</em></h2>
     <div class="social" id="social"></div>
+  </section>
+
+  <section id="friends">
+    <h2>Друзья <em>SOCIAL LINK</em></h2>
+    <div class="friends" id="fr"></div>
   </section>
 
   <section id="projects">
@@ -387,6 +407,50 @@ function socketNow(){
 }
 pollNow();
 socketNow();
+
+/* ===== ДРУЗЬЯ — Discord ID и (по желанию) имя, если Lanyard его не знает ===== */
+const FRIENDS = [
+  { id:"952898114321281084", name:"" },
+  { id:"552120303153578015", name:"" },
+  { id:"813521412165861397", name:"" },
+  { id:"839747625887465482", name:"" },
+  { id:"985113810266386432", name:"" },
+  { id:"983770743198347294", name:"" },
+];
+const defAv = id => `https://cdn.discordapp.com/embed/avatars/${Number((BigInt(id) >> 22n) % 6n)}.png`;
+
+function friendLine(d){
+  const a = (d.activities||[]).find(x => x.type !== 4);
+  if (a){
+    if (a.id === "spotify:1" && d.spotify) return [KIND[2], d.spotify.song + " — " + d.spotify.artist];
+    return [KIND[a.type] || ["Занят","#00c8ff"], a.name + (a.details ? " · " + a.details : "")];
+  }
+  const c = (d.activities||[]).find(x => x.type === 4);
+  return [null, c && c.state ? c.state : ST_NAME[d.discord_status || "offline"]];
+}
+function renderFriend(f, i, d){
+  const el = document.getElementById('fr' + i);
+  const u = d && d.discord_user;
+  const name = f.name || (u && (u.global_name || u.username)) || "Друг #" + (i+1);
+  const av = u && u.avatar ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=128` : defAv(f.id);
+  let line = "Discord", k = null, st = "unknown";
+  if (d){ st = d.discord_status || "offline"; const [kk, l] = friendLine(d); line = kk ? kk[0] + ": " + l : l; k = kk && kk[1]; }
+  el.innerHTML = `<div class="me"><img src="${esc(av)}" alt=""><i class="${st}"></i></div>
+    <div class="t"><b>${esc(name)}</b><small class="${k?'k':''}" ${k?`style="--k:${k}"`:''}>${esc(line)}</small></div>`;
+}
+document.getElementById('fr').innerHTML = FRIENDS.map((f,i) =>
+  `<a class="fr reveal in" id="fr${i}" href="https://discord.com/users/${f.id}" target="_blank" rel="noopener"></a>`).join('');
+FRIENDS.forEach((f,i) => renderFriend(f, i, null));
+async function pollFriends(){
+  await Promise.all(FRIENDS.map(async (f,i) => {
+    try {
+      const j = await (await fetch(`https://api.lanyard.rest/v1/users/${f.id}`)).json();
+      if (j.success) renderFriend(f, i, j.data);
+    } catch(e){}
+  }));
+}
+pollFriends();
+setInterval(pollFriends, 30000);
 </script>
 </body>
 </html>
