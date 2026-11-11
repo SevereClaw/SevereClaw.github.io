@@ -128,6 +128,35 @@ h2::after{content:"";flex:1;height:3px;background:linear-gradient(90deg,var(--cy
 .links a:hover{filter:brightness(1.2);transform:translateY(-2px)}
 .card.hide{display:none}
 
+/* ---------- тип личности ---------- */
+.mbti{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+.mbti div{display:flex;align-items:stretch;transform:skewX(-10deg);box-shadow:6px 6px 0 var(--blue)}
+.mbti b{font:700 24px/1 Oswald,sans-serif;letter-spacing:.06em;background:var(--white);color:var(--ink);padding:10px 16px}
+.mbti span{display:flex;align-items:center;font:500 13px/1.2 Rubik,sans-serif;background:var(--cyan);color:var(--ink);padding:6px 14px;max-width:190px}
+
+/* ---------- сейчас ---------- */
+.now{position:relative;display:grid;grid-template-columns:auto 1fr;gap:26px;align-items:center;padding:26px 30px;
+  background:linear-gradient(110deg,rgba(11,63,168,.6),rgba(6,23,63,.9));border:1px solid rgba(0,200,255,.25);
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 26px),calc(100% - 26px) 100%,0 100%)}
+.me{position:relative;width:110px;height:110px}
+.me img{width:100%;height:100%;object-fit:cover;clip-path:polygon(12% 0,100% 0,88% 100%,0 100%);background:var(--deep)}
+.me i{position:absolute;right:2px;bottom:4px;width:22px;height:22px;border-radius:50%;border:4px solid var(--ink);background:#7a869a}
+.me i.online{background:#23a55a}.me i.idle{background:#f0b232}.me i.dnd{background:#f23f43}
+.who b{display:block;font:700 30px/1 Oswald,sans-serif;text-transform:uppercase;transform:skewX(-6deg)}
+.who small{display:block;margin-top:6px;color:var(--mute);font:500 13px Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase}
+.acts{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.act{display:flex;gap:14px;align-items:center;padding:14px;background:rgba(2,10,31,.55);border-left:4px solid var(--k,var(--cyan));min-width:0}
+.act img{width:72px;height:72px;object-fit:cover;flex:none;background:var(--deep)}
+.act .t{min-width:0;flex:1}
+.act em{display:block;font:700 11px/1 Oswald,sans-serif;font-style:normal;letter-spacing:.25em;text-transform:uppercase;color:var(--k,var(--cyan));margin-bottom:6px}
+.act strong{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act p{font-size:13px;color:#b9cde6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{height:4px;margin-top:8px;background:rgba(255,255,255,.12)}
+.bar u{display:block;height:100%;width:0;background:var(--k,var(--cyan))}
+.tm{font:500 12px Oswald,sans-serif;letter-spacing:.1em;color:var(--mute);margin-top:4px}
+.idle-msg{grid-column:1/-1;color:var(--mute);font-size:15px}
+@media (max-width:560px){.now{grid-template-columns:1fr;padding:22px}.acts{grid-template-columns:1fr}}
+
 footer{max-width:1200px;margin:0 auto;padding:40px 6vw 60px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;
   font:500 14px Oswald,sans-serif;letter-spacing:.25em;text-transform:uppercase;color:var(--mute);border-top:1px solid rgba(0,200,255,.15)}
 footer b{color:var(--cyan)}
@@ -135,7 +164,7 @@ footer b{color:var(--cyan)}
 .reveal{opacity:0;transform:translateY(24px);transition:opacity .6s,transform .6s}
 .reveal.in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
-@media (max-width:560px){.grid{grid-template-columns:1fr}nav a{padding:14px 10px;letter-spacing:.1em}.moon{width:40vw;right:-6vw}}
+@media (max-width:560px){.grid{grid-template-columns:1fr}nav .in{overflow-x:auto;gap:0}nav a{padding:14px 9px;letter-spacing:.08em;font-size:14px;white-space:nowrap}.moon{width:40vw;right:-6vw}}
 </style>
 </head>
 <body>
@@ -146,16 +175,30 @@ footer b{color:var(--cyan)}
   <div class="tag reveal">PERSONAL PAGE</div>
   <h1 class="reveal">Severe<br>Claw<span>// проекты и связь</span></h1>
   <p class="lead reveal">Делаю программы для Windows и Android, темы в стиле Persona и всё, чего мне не хватает в готовых приложениях.</p>
+  <div class="mbti reveal">
+    <div><b>ESFP</b><span>Развлекатель</span></div>
+    <div><b>3w2</b><span>Эннеаграмма: Достигатор с крылом Помощника</span></div>
+  </div>
   <div class="clock reveal">ДО ТЁМНОГО ЧАСА: <b id="dh">--:--:--</b></div>
 </header>
 
 <nav><div class="in">
+  <a href="#now">Сейчас</a>
   <a href="#links">Связь</a>
   <a href="#projects">Проекты</a>
   <a href="https://github.com/SevereClaw" target="_blank" rel="noopener">GitHub</a>
 </div></nav>
 
 <main>
+  <section id="now">
+    <h2>Сейчас <em>NOW</em></h2>
+    <div class="now reveal">
+      <div class="me"><img id="av" alt="" src="https://api.lanyard.rest/326495406970109962.png"><i id="st"></i></div>
+      <div class="who"><b id="nm">SevereClaw</b><small id="stt">загрузка…</small></div>
+      <div class="acts" id="acts"></div>
+    </div>
+  </section>
+
   <section id="links">
     <h2>Связь <em>SOCIAL</em></h2>
     <div class="social" id="social"></div>
@@ -262,6 +305,88 @@ function tick(){
 }
 tick(); setInterval(tick, 1000);
 document.getElementById('yr').textContent = new Date().getFullYear();
+
+/* ===== СЕЙЧАС: живой статус из Discord через Lanyard ===== */
+const DISCORD_ID = "326495406970109962";
+const ST_NAME = {online:"в сети", idle:"отошёл", dnd:"не беспокоить", offline:"не в сети"};
+const KIND = {0:["Играет","#00c8ff"],1:["Стримит","#9146ff"],2:["Слушает","#1ed760"],3:["Смотрит","#e8102a"],5:["Соревнуется","#f0b232"]};
+let P = null;
+
+function asset(a, img){
+  if (!img) return "";
+  if (img.startsWith("mp:")) return "https://media.discordapp.net/" + img.slice(3);
+  if (img.startsWith("spotify:")) return "https://i.scdn.co/image/" + img.slice(8);
+  return a.application_id ? `https://cdn.discordapp.com/app-assets/${a.application_id}/${img}.png` : "";
+}
+const fmt = ms => { ms = Math.max(0, ms/1000|0); const h=ms/3600|0, m=(ms%3600)/60|0, s=ms%60;
+  return (h? h+":"+String(m).padStart(2,'0') : m) + ":" + String(s).padStart(2,'0'); };
+
+function renderNow(){
+  if (!P) return;
+  const u = P.discord_user || {};
+  document.getElementById('nm').textContent = u.global_name || u.username || "SevereClaw";
+  if (u.avatar) document.getElementById('av').src = `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.${u.avatar.startsWith('a_')?'gif':'png'}?size=256`;
+  const st = P.discord_status || "offline";
+  document.getElementById('st').className = st;
+  const custom = (P.activities||[]).find(a => a.type === 4);
+  document.getElementById('stt').textContent = ST_NAME[st] + (custom && custom.state ? " · " + custom.state : "");
+
+  const acts = (P.activities||[]).filter(a => a.type !== 4).map(a => {
+    if (a.id === "spotify:1" && P.spotify) {
+      const s = P.spotify;
+      return {kind:2, title:s.song, sub:s.artist, img:s.album_art_url, ts:s.timestamps, app:"Spotify"};
+    }
+    return {kind:a.type, title:a.details || a.name, sub:[a.details ? a.state : "", a.details ? "" : a.state].filter(Boolean).join(" · ") || (a.details ? a.name : ""),
+            img: asset(a, a.assets && a.assets.large_image), ts:a.timestamps, app:a.name};
+  });
+
+  const box = document.getElementById('acts');
+  if (!acts.length){
+    box.innerHTML = `<div class="idle-msg">${st === "offline" ? "Сейчас не в сети." : "Сейчас ничего не запущено."}</div>`;
+    return;
+  }
+  box.innerHTML = acts.map((a,i) => {
+    const [label,color] = KIND[a.kind] || ["Занят","#00c8ff"];
+    const img = a.img ? `<img src="${esc(a.img)}" alt="" onerror="this.remove()">` : "";
+    const bar = a.ts && a.ts.start && a.ts.end ? `<div class="bar"><u data-s="${a.ts.start}" data-e="${a.ts.end}"></u></div>` : "";
+    const tm = a.ts && a.ts.start ? `<div class="tm" data-s="${a.ts.start}" ${a.ts.end?`data-e="${a.ts.end}"`:""}></div>` : "";
+    return `<div class="act" style="--k:${color}">${img}<div class="t"><em>${label} · ${esc(a.app||"")}</em>
+      <strong>${esc(a.title||"")}</strong>${a.sub?`<p>${esc(a.sub)}</p>`:""}${bar}${tm}</div></div>`;
+  }).join('');
+  tickNow();
+}
+function tickNow(){
+  const now = Date.now();
+  document.querySelectorAll('.bar u').forEach(b => b.style.width = Math.min(100,(now-b.dataset.s)/(b.dataset.e-b.dataset.s)*100)+"%");
+  document.querySelectorAll('.tm').forEach(t => t.textContent = t.dataset.e
+    ? fmt(now - t.dataset.s) + " / " + fmt(t.dataset.e - t.dataset.s)
+    : "уже " + fmt(now - t.dataset.s));
+}
+setInterval(tickNow, 1000);
+
+async function pollNow(){
+  try {
+    const r = await fetch(`https://api.lanyard.rest/v1/users/${DISCORD_ID}`);
+    const j = await r.json();
+    if (j.success){ P = j.data; renderNow(); }
+    else document.getElementById('stt').textContent = "статус недоступен";
+  } catch(e){ document.getElementById('stt').textContent = "статус недоступен"; }
+}
+function socketNow(){
+  let ws, hb;
+  try { ws = new WebSocket("wss://api.lanyard.rest/socket"); } catch(e){ return false; }
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (m.op === 1){
+      hb = setInterval(() => ws.readyState === 1 && ws.send(JSON.stringify({op:3})), m.d.heartbeat_interval);
+      ws.send(JSON.stringify({op:2, d:{subscribe_to_id: DISCORD_ID}}));
+    } else if (m.op === 0 && (m.t === "INIT_STATE" || m.t === "PRESENCE_UPDATE")){ P = m.d; renderNow(); }
+  };
+  ws.onclose = () => { clearInterval(hb); setTimeout(socketNow, 5000); };
+  return true;
+}
+pollNow();
+socketNow();
 </script>
 </body>
 </html>
