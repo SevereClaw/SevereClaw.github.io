@@ -100,6 +100,9 @@ h2::after{content:"";flex:1;height:1px;background:var(--line)}
 .pj.p5{--d:#ff4a5f}.pj.cyber{--d:#ff4ddb}.pj.p4{--d:#ffd400}
 .pj p{flex:1;margin:8px 0 12px;font-size:14px;color:var(--dim)}
 .pj .tags{font-size:12px;color:var(--faint);margin-bottom:12px}
+.pj .upd{font-size:12px;color:var(--faint);margin:-6px 0 12px;min-height:16px;display:flex;align-items:center;gap:7px}
+.pj .upd.fresh{color:#4ade80}
+.pj .upd.fresh::before{content:"";width:6px;height:6px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80}
 .pj .lk{display:flex;gap:16px;font-size:13px}
 .pj .lk a{color:var(--fg);border-bottom:1px solid var(--line2);padding-bottom:1px;transition:.2s}
 .pj .lk a:hover{color:var(--acc);border-color:var(--acc)}
@@ -359,8 +362,45 @@ $('grid').innerHTML = PROJECTS.map(p => {
   const links = [`<a href="${GH+p.repo}/releases/latest" target="_blank" rel="noopener">Скачать</a>`]
     .concat((p.extra||[]).map(e => `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.label)}</a>`))
     .concat([`<a href="${GH+p.repo}" target="_blank" rel="noopener">Код</a>`]).join('');
-  return `<article class="pj ${p.style}"><h3>${esc(p.title)}</h3><p>${esc(p.text)}</p><div class="tags">${esc(p.tags)}</div><div class="lk">${links}</div></article>`;
+  return `<article class="pj ${p.style}" data-repo="${esc(p.repo)}"><h3>${esc(p.title)}</h3><p>${esc(p.text)}</p><div class="tags">${esc(p.tags)}</div><div class="upd"></div><div class="lk">${links}</div></article>`;
 }).join('');
+
+
+/* когда обновлялись репозитории: один запрос к GitHub, ответ живёт в браузере 15 минут */
+function agoLong(t){
+  const m = (Date.now() - t) / 60000;
+  if (m < 2) return "только что";
+  if (m < 60) return Math.round(m) + " мин назад";
+  const h = m / 60; if (h < 24) return Math.round(h) + " ч назад";
+  const d = Math.round(h / 24);
+  if (d === 1) return "вчера";
+  if (d < 31) return d + " " + (d%10===1 && d%100!==11 ? "день" : [2,3,4].includes(d%10) && ![12,13,14].includes(d%100) ? "дня" : "дней") + " назад";
+  return new Date(t).toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'});
+}
+async function repoDates(){
+  let data = null;
+  try { const c = JSON.parse(store.get('repoDates') || 'null'); if (c && Date.now() - c.at < 15*60000) data = c.repos; } catch(e){}
+  if (!data){
+    try {
+      const r = await fetch(`https://api.github.com/users/${GH_USER}/repos?per_page=100&sort=pushed`);
+      if (r.ok){ data = Object.fromEntries((await r.json()).map(x => [x.name.toLowerCase(), x.pushed_at])); store.set('repoDates', JSON.stringify({at: Date.now(), repos: data})); }
+    } catch(e){}
+  }
+  if (!data) return;
+  const grid = $('grid');
+  const cards = [...grid.querySelectorAll('.pj')];
+  cards.forEach(c => {
+    const t = data[c.dataset.repo.toLowerCase()]; if (!t) return;
+    const ts = new Date(t).getTime(), el = c.querySelector('.upd');
+    el.textContent = "обновлён " + agoLong(ts);
+    el.title = new Date(ts).toLocaleString('ru-RU', {day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'});
+    el.classList.toggle('fresh', Date.now() - ts < 24*3600*1000);
+    c.dataset.ts = ts;
+  });
+  cards.sort((a, b) => (+b.dataset.ts || 0) - (+a.dataset.ts || 0)).forEach(c => grid.appendChild(c));   // свежие сверху
+}
+repoDates();
+setInterval(repoDates, 5*60000);
 
 const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }), {threshold:.1});
 document.querySelectorAll('.rv').forEach((el,i) => { el.style.transitionDelay = (i%4)*80+'ms'; io.observe(el); });
