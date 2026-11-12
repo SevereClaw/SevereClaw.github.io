@@ -97,7 +97,7 @@ h2::after{content:"";flex:1;height:1px;background:var(--line)}
 .pj:hover{background:#0b1020}
 .pj h3{font:500 20px/1.2 Oswald,sans-serif;letter-spacing:.02em;display:flex;align-items:center;gap:10px}
 .pj h3::before{content:"";width:6px;height:6px;background:var(--d,var(--acc))}
-.pj.p5{--d:#ff4a5f}.pj.cyber{--d:#ff4ddb}
+.pj.p5{--d:#ff4a5f}.pj.cyber{--d:#ff4ddb}.pj.p4{--d:#ffd400}
 .pj p{flex:1;margin:8px 0 12px;font-size:14px;color:var(--dim)}
 .pj .tags{font-size:12px;color:var(--faint);margin-bottom:12px}
 .pj .lk{display:flex;gap:16px;font-size:13px}
@@ -290,6 +290,10 @@ const SOCIAL = [
 ];
 const GH = "https://github.com/SevereClaw/";
 const PROJECTS = [
+  { repo:"MidnightClips", title:"MidnightClips", style:"p4", tags:"Windows · запись · Persona 4",
+    text:"Запись игровых клипов в жёлто-чёрном стиле Persona 4: держит в памяти последние секунды экрана и по Alt+F10 сохраняет клип. Галерея, обрезка, сжатие под Discord и отправка в канал." },
+  { repo:"CyberCall", title:"CyberCall", style:"cyber", tags:"Discord · Vencord · киберпанк",
+    text:"Входящий звонок Discord в киберпанк-стиле: панель с глитч-анимацией поверх игр, свой рингтон, кнопки «Принять / Отклонить» и горячие клавиши. Плагин для Vencord." },
   { repo:"NekoBoxP3R", title:"NekoBox P3R", style:"p3", tags:"Windows · VPN · Persona 3",
     text:"Сборка VPN-клиента NekoBox в стиле Persona 3: своя тема, значок, большая кнопка «Подключиться» и упрощённый режим." },
   { repo:"StealYourVoice", title:"Steal Your Voice", style:"p5", tags:"Windows · звук · Persona 5",
