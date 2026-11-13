@@ -287,6 +287,13 @@ a.hi:hover{background:#0b1020}
 .ci code{font:12px Consolas,monospace;color:var(--faint);margin-left:8px}
 @media (max-width:560px){.ci{grid-template-columns:1fr auto}.ci .rp{grid-column:1/-1}.ci .ms{white-space:normal}}
 
+/* TikTok */
+.tt{display:flex;justify-content:center;min-height:120px;border:1px solid var(--line);background:var(--card);padding:10px}
+.tt blockquote{margin:0;max-width:780px;width:100%}
+.tt .ph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:30px;color:var(--dim);font-size:14px;text-align:center}
+.tt .ph a{color:var(--fg);border:1px solid var(--line2);padding:9px 16px;transition:.2s}
+.tt .ph a:hover{border-color:#fe2c55;color:#fe2c55}
+
 footer{margin-top:80px;padding:28px 0 48px;border-top:1px solid var(--line);font-size:12px;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 footer b{color:var(--dim);font-weight:500}
 
@@ -314,7 +321,7 @@ footer b{color:var(--dim);font-weight:500}
 </div>
 
 <nav><div class="wrap">
-  <a href="#now">Сейчас</a><a href="#links">Связь</a><a href="#youtube">YouTube</a><a href="#telegram">Telegram</a><a href="#friends">Друзья</a><a href="#guests">Гости</a><a href="#changes">Изменения</a><a href="#projects">Проекты</a>
+  <a href="#now">Сейчас</a><a href="#links">Связь</a><a href="#youtube">YouTube</a><a href="#tiktok">TikTok</a><a href="#telegram">Telegram</a><a href="#friends">Друзья</a><a href="#guests">Гости</a><a href="#changes">Изменения</a><a href="#projects">Проекты</a>
 </div></nav>
 
 <main class="wrap">
@@ -341,18 +348,23 @@ footer b{color:var(--dim);font-weight:500}
     <div class="yt rv" id="yt"></div>
   </section>
 
+  <section id="tiktok">
+    <h2><span>04</span>TikTok</h2>
+    <div class="tt rv" id="ttBox"><div class="ph">Загружаю ролики из TikTok…<a href="https://www.tiktok.com/@severeclaw3" target="_blank" rel="noopener">Открыть @severeclaw3 в TikTok ↗</a></div></div>
+  </section>
+
   <section id="telegram" style="display:none">
-    <h2><span>04</span>Новое в Telegram</h2>
+    <h2><span>05</span>Новое в Telegram</h2>
     <div class="tgl rv" id="tgl"></div>
   </section>
 
   <section id="friends">
-    <h2><span>05</span>Друзья</h2>
+    <h2><span>06</span>Друзья</h2>
     <div class="list rv" id="fr"></div>
   </section>
 
   <section id="guests">
-    <h2><span>06</span>Гости</h2>
+    <h2><span>07</span>Гости</h2>
     <div class="guests rv" id="gl"></div>
     <div class="gstat" id="gs"></div>
     <div class="sign" id="sign"></div>
@@ -360,12 +372,12 @@ footer b{color:var(--dim);font-weight:500}
   </section>
 
   <section id="changes" style="display:none">
-    <h2><span>07</span>Что я делал</h2>
+    <h2><span>08</span>Что я делал</h2>
     <div class="cm rv" id="cm"></div>
   </section>
 
   <section id="projects">
-    <h2><span>08</span>Проекты</h2>
+    <h2><span>09</span>Проекты</h2>
     <div class="proj rv" id="grid"></div>
   </section>
 
@@ -396,6 +408,7 @@ const SOCIAL = [
   { name:"Telegram", note:"@gagavrodi",      url:"https://t.me/gagavrodi", icon:"tg" },
   { name:"Telegram", note:"канал по приглашению", url:"https://t.me/+FiJmSWn3zg9hMTEy", icon:"tg" },
   { name:"YouTube",  note:"@SevereClaw",     url:"https://www.youtube.com/@SevereClaw", icon:"yt" },
+  { name:"TikTok",   note:"@severeclaw3",    url:"https://www.tiktok.com/@severeclaw3", icon:"tt" },
   { name:"Discord",  note:"сервер",          url:"https://discord.gg/wXXveqKku5", icon:"ds" },
   { name:"Discord",  note:"мой профиль",     url:"https://discord.com/users/326495406970109962", icon:"ds" },
   { name:"Steam",    note:"SevereClaw",      url:"https://steamcommunity.com/id/SevereClaw/", icon:"st" },
@@ -451,6 +464,7 @@ const ICONS = {
   yt:'<svg viewBox="0 0 24 24"><path d="M3 5h18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm7 3.5v7l6-3.5-6-3.5z"/></svg>',
   ds:'<svg viewBox="0 0 24 24"><path d="M4 3h16a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H9l-5 4v-4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm4.5 6.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm7 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/></svg>',
   st:'<svg viewBox="0 0 24 24"><path d="M7 7h10a6 6 0 0 1 6 6v1a5 5 0 0 1-8.6 3.4L13 16h-2l-1.4 1.4A5 5 0 0 1 1 14v-1a6 6 0 0 1 6-6zm0 3v1.5H5.5v2H7V15h2v-1.5h1.5v-2H9V10H7zm9.5 1a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4zm2.5 2.2a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4z"/></svg>',
+  tt:'<svg viewBox="0 0 24 24"><path d="M14 3h3c.3 2 1.7 3.6 4 4v3c-1.6 0-3-.5-4-1.2V15a6 6 0 1 1-6-6v3.2a2.8 2.8 0 1 0 3 2.8z"/></svg>',
   gh:'<svg viewBox="0 0 24 24"><path d="M8 4 2 12l6 8 1.6-1.2L4.5 12l5.1-6.8zm8 0-1.6 1.2 5.1 6.8-5.1 6.8L16 20l6-8z"/></svg>',
 };
 const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -881,6 +895,24 @@ function renderCommits(){
       <span class="rp"${col ? ` style="color:${col}"` : ''}>${esc(c.repo)}</span><span class="ms">${esc(c.msg)}<code>${esc(c.sha)}</code></span><time>${agoLong(c.time)}</time></a>`;
   }).join('');
 }
+
+
+/* TikTok: официальный блок профиля, грузится, только когда до него долистали */
+(function tiktok(){
+  const box = $('ttBox'); let done = false;
+  function load(){
+    if (done) return; done = true;
+    box.insertAdjacentHTML('afterbegin', `<blockquote class="tiktok-embed" cite="https://www.tiktok.com/@severeclaw3" data-unique-id="severeclaw3" data-embed-type="creator" style="max-width:780px;min-width:288px"><section><a target="_blank" rel="noopener" href="https://www.tiktok.com/@severeclaw3">@severeclaw3</a></section></blockquote>`);
+    const sc = document.createElement('script'); sc.async = true; sc.src = 'https://www.tiktok.com/embed.js';
+    sc.onerror = () => { box.querySelector('blockquote')?.remove(); box.querySelector('.ph').firstChild.textContent = 'TikTok не загрузился (возможно, он заблокирован у тебя без VPN). '; };
+    document.body.appendChild(sc);
+    // когда TikTok подставил свой iframe — убираем заглушку
+    const mo = new MutationObserver(() => { if (box.querySelector('iframe')){ box.querySelector('.ph')?.remove(); mo.disconnect(); } });
+    mo.observe(box, { childList: true, subtree: true });
+    setTimeout(() => { if (!box.querySelector('iframe')){ const ph = box.querySelector('.ph'); if (ph) ph.firstChild.textContent = 'TikTok не загрузился (возможно, он заблокирован у тебя без VPN). '; box.querySelector('blockquote')?.remove(); } }, 15000);
+  }
+  new IntersectionObserver((es, o) => { if (es.some(e => e.isIntersecting)){ load(); o.disconnect(); } }, { rootMargin: '400px' }).observe(box);
+})();
 
 /* ================= данные из gist (их кладёт бот) ================= */
 const PFILE = "presence.json", VFILE = "visitors.json", AFILE = "activity.json", STALE = 12*60*1000;
