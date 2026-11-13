@@ -796,7 +796,7 @@ function renderYouTube(){
   const views = n => n == null ? '' : ' · ' + n.toLocaleString('ru-RU') + ' ' + (n%10===1 && n%100!==11 ? 'просмотр' : [2,3,4].includes(n%10) && ![12,13,14].includes(n%100) ? 'просмотра' : 'просмотров');
   const card = (v, big) => `<a class="yv${big ? ' big' : ''}" href="${url(v)}" target="_blank" rel="noopener">
     <div class="th" style="background-image:url('https://i.ytimg.com/vi/${encodeURIComponent(v.id)}/${big ? 'hqdefault' : 'mqdefault'}.jpg')"><span class="pl"></span>${v.short ? '<span class="sh">Shorts</span>' : ''}</div>
-    <div class="t"><b>${esc(v.title)}</b><small>${v.published ? agoLong(v.published) : ''}${views(v.views)}</small></div></a>`;
+    <div class="t"><b>${esc(v.title)}</b><small>${v.published ? agoLong(v.published) : esc(v.publishedText || '')}${views(v.views)}</small></div></a>`;
   $('yt').innerHTML = card(vids[0], true) + (vids.length > 1 ? `<div class="ys">${vids.slice(1, 4).map(v => card(v, false)).join('')}</div>` : '');
 }
 
