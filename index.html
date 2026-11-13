@@ -747,10 +747,17 @@ document.addEventListener('mousemove', e => { if (e.target.closest('[data-tip-ht
 document.addEventListener('mouseout', e => { if (e.target.closest('[data-tip-html]') && !e.relatedTarget?.closest?.('[data-tip-html]')) tipOff(); });
 
 function cover(url, cls){ return url ? `<img src="${esc(url)}" alt="" onerror="this.outerHTML='<div class=&quot;nocov ${cls||''}&quot;>♪</div>'">` : `<div class="nocov">♪</div>`; }
+const isLyric = t => typeof t === 'string' && /^\s*[♪♫🎵🎶]/.test(t);
 function renderMusic(){
   const box = $('music'); if (!box) return;
-  const now = P && P.discord_status !== 'offline' ? (P.activities||[]).find(a => a.type === 2 && (a.details || a.state)) : null;
-  const tracks = (ACT && ACT.music && ACT.music.tracks) || [];
+  let now = P && P.discord_status !== 'offline' ? (P.activities||[]).find(a => a.type === 2) : null;
+  if (now){                                   // строки текста песни (♪ …) не показываем
+    const lt = now.assets && now.assets.large_text;
+    const title = !isLyric(now.details) && now.details ? now.details : (lt && !isLyric(lt) ? lt : null);
+    const sub = !isLyric(now.state) && now.state ? now.state : null;
+    now = title ? Object.assign({}, now, { details: title, state: sub }) : (sub ? Object.assign({}, now, { details: sub, state: null }) : null);
+  }
+  const tracks = ((ACT && ACT.music && ACT.music.tracks) || []).filter(t => t && t.title && !isLyric(t.title));
   let card = '';
   if (now){
     const t = now.timestamps;
