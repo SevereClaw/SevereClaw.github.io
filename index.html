@@ -275,6 +275,18 @@ a.hi:hover{background:#0b1020}
 .sg .v small{display:block;font-size:12px;color:var(--faint)}
 @media (max-width:560px){.sg{grid-template-columns:84px 1fr 84px}.sg img{width:84px;height:32px}}
 
+/* лента изменений */
+.cm{display:grid;border:1px solid var(--line)}
+.ci{display:grid;grid-template-columns:150px 1fr auto;gap:14px;align-items:baseline;padding:11px 14px;color:inherit;border-top:1px solid var(--line);transition:background .2s}
+.ci:first-child{border-top:0}
+.ci:hover{background:#0b1020}
+.ci .rp{font-size:12px;color:var(--acc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ci .rp::before{content:"";display:inline-block;width:6px;height:6px;margin-right:8px;vertical-align:1px;background:currentColor}
+.ci .ms{font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ci time{font-size:12px;color:var(--faint);white-space:nowrap}
+.ci code{font:12px Consolas,monospace;color:var(--faint);margin-left:8px}
+@media (max-width:560px){.ci{grid-template-columns:1fr auto}.ci .rp{grid-column:1/-1}.ci .ms{white-space:normal}}
+
 footer{margin-top:80px;padding:28px 0 48px;border-top:1px solid var(--line);font-size:12px;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 footer b{color:var(--dim);font-weight:500}
 
@@ -302,7 +314,7 @@ footer b{color:var(--dim);font-weight:500}
 </div>
 
 <nav><div class="wrap">
-  <a href="#now">Сейчас</a><a href="#links">Связь</a><a href="#youtube">YouTube</a><a href="#telegram">Telegram</a><a href="#friends">Друзья</a><a href="#guests">Гости</a><a href="#projects">Проекты</a>
+  <a href="#now">Сейчас</a><a href="#links">Связь</a><a href="#youtube">YouTube</a><a href="#telegram">Telegram</a><a href="#friends">Друзья</a><a href="#guests">Гости</a><a href="#changes">Изменения</a><a href="#projects">Проекты</a>
 </div></nav>
 
 <main class="wrap">
@@ -347,8 +359,13 @@ footer b{color:var(--dim);font-weight:500}
     <div class="note">Отметка добавит твою аватарку и ник в этот список. Без неё ты остаёшься анонимным.</div>
   </section>
 
+  <section id="changes" style="display:none">
+    <h2><span>07</span>Что я делал</h2>
+    <div class="cm rv" id="cm"></div>
+  </section>
+
   <section id="projects">
-    <h2><span>07</span>Проекты</h2>
+    <h2><span>08</span>Проекты</h2>
     <div class="proj rv" id="grid"></div>
   </section>
 
@@ -843,6 +860,21 @@ function renderSteam(){
       <div class="v"><b>${h(x.h2w)}</b><small>всего ${h(x.total)}</small></div></a>`).join('')}</div>`;
 }
 
+
+/* лента изменений: последние коммиты из публичных репозиториев */
+function renderCommits(){
+  const list = (ACT && ACT.commits) || [];
+  $('changes').style.display = list.length ? '' : 'none';
+  if (!list.length) return;
+  const colors = {};
+  PROJECTS.forEach(p => colors[p.repo.toLowerCase()] = p.style === 'p5' ? '#ff4a5f' : p.style === 'cyber' ? '#ff4ddb' : p.style === 'p4' ? '#ffd400' : '');
+  $('cm').innerHTML = list.map(c => {
+    const col = colors[c.repo.toLowerCase()];
+    return `<a class="ci" href="${esc(c.url)}" target="_blank" rel="noopener" title="${esc(new Date(c.time).toLocaleString('ru-RU'))}">
+      <span class="rp"${col ? ` style="color:${col}"` : ''}>${esc(c.repo)}</span><span class="ms">${esc(c.msg)}<code>${esc(c.sha)}</code></span><time>${agoLong(c.time)}</time></a>`;
+  }).join('');
+}
+
 /* ================= данные из gist (их кладёт бот) ================= */
 const PFILE = "presence.json", VFILE = "visitors.json", AFILE = "activity.json", STALE = 12*60*1000;
 let gistId = store.get('presenceGist');
@@ -899,7 +931,7 @@ async function loadGist(){
     }
     FRIENDS.forEach((f,i) => renderFriend(f, i, users[f.id] ? (alive ? users[f.id] : off(users[f.id])) : null));
     if (vTxt) renderGuests(JSON.parse(vTxt));
-    if (aTxt){ ACT = JSON.parse(aTxt); renderMusic(); renderGames(); renderYouTube(); renderTelegram(); renderSteam(); }
+    if (aTxt){ ACT = JSON.parse(aTxt); renderMusic(); renderGames(); renderYouTube(); renderTelegram(); renderSteam(); renderCommits(); }
   } catch(e){ console.warn('loadGist', e); }
 }
 loadGist();
