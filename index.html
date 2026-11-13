@@ -4,7 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SevereClaw</title>
-<meta name="description" content="SevereClaw — проекты, каналы и что я делаю прямо сейчас">
+<meta name="description" content="Программы для Windows и Android, темы в стиле Persona и что я делаю прямо сейчас: игры, музыка, проекты на GitHub.">
+<meta name="theme-color" content="#05070d">
+<link rel="canonical" href="https://severeclaw.github.io/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SevereClaw">
+<meta property="og:url" content="https://severeclaw.github.io/">
+<meta property="og:title" content="SevereClaw">
+<meta property="og:description" content="Программы для Windows и Android, темы в стиле Persona и что я делаю прямо сейчас: игры, музыка, проекты на GitHub.">
+<meta property="og:image" content="https://severeclaw.github.io/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="SevereClaw — проекты, статус, гости">
+<meta property="og:locale" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SevereClaw">
+<meta name="twitter:description" content="Программы для Windows и Android, темы в стиле Persona и что я делаю прямо сейчас.">
+<meta name="twitter:image" content="https://severeclaw.github.io/og.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Rubik:wght@400;500&display=swap" rel="stylesheet">
@@ -196,6 +212,27 @@ a.hi:hover{background:#0b1020}
 .ask .skip{display:block;margin:14px auto 0;font:400 13px Rubik,sans-serif;color:var(--faint);background:none;border:0;cursor:pointer}
 .ask .skip:hover{color:var(--dim)}
 
+/* YouTube */
+.yt{display:grid;grid-template-columns:1.35fr 1fr;gap:14px}
+.yv{display:block;color:inherit;border:1px solid var(--line);background:var(--card);transition:border-color .2s}
+.yv:hover{border-color:#ff4a5f}
+.yv .th{position:relative;aspect-ratio:16/9;background:#111827 center/cover no-repeat;overflow:hidden}
+.yv .th::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(5,7,13,.55))}
+.yv .pl{position:absolute;left:50%;top:50%;width:58px;height:40px;margin:-20px 0 0 -29px;border-radius:10px;background:rgba(5,7,13,.72);display:grid;place-items:center;z-index:1;transition:background .2s}
+.yv .pl::before{content:"";border-left:15px solid #fff;border-top:9px solid transparent;border-bottom:9px solid transparent;margin-left:3px}
+.yv:hover .pl{background:#e8102a}
+.yv .sh{position:absolute;right:8px;top:8px;z-index:1;font-size:11px;letter-spacing:.1em;text-transform:uppercase;background:#e8102a;color:#fff;padding:3px 7px}
+.yv .t{padding:12px 14px}
+.yv b{display:block;font-weight:500;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.yv small{display:block;margin-top:5px;font-size:12px;color:var(--dim)}
+.yv.big b{font:500 20px/1.3 Oswald,sans-serif}
+.ys{display:grid;gap:10px;align-content:start}
+.ys .yv{display:grid;grid-template-columns:150px 1fr;align-items:center}
+.ys .yv .t{padding:8px 12px}
+.ys .yv .pl{transform:scale(.7)}
+.ys .yv b{font-size:13px}
+@media (max-width:640px){.yt{grid-template-columns:1fr}.ys .yv{grid-template-columns:120px 1fr}}
+
 footer{margin-top:80px;padding:28px 0 48px;border-top:1px solid var(--line);font-size:12px;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 footer b{color:var(--dim);font-weight:500}
 
@@ -223,7 +260,7 @@ footer b{color:var(--dim);font-weight:500}
 </div>
 
 <nav><div class="wrap">
-  <a href="#now">Сейчас</a><a href="#links">Связь</a><a href="#friends">Друзья</a><a href="#guests">Гости</a><a href="#projects">Проекты</a>
+  <a href="#now">Сейчас</a><a href="#links">Связь</a><a href="#youtube">YouTube</a><a href="#friends">Друзья</a><a href="#guests">Гости</a><a href="#projects">Проекты</a>
 </div></nav>
 
 <main class="wrap">
@@ -243,13 +280,18 @@ footer b{color:var(--dim);font-weight:500}
     <div class="list rv" id="social"></div>
   </section>
 
+  <section id="youtube" style="display:none">
+    <h2><span>03</span>Новое на YouTube</h2>
+    <div class="yt rv" id="yt"></div>
+  </section>
+
   <section id="friends">
-    <h2><span>03</span>Друзья</h2>
+    <h2><span>04</span>Друзья</h2>
     <div class="list rv" id="fr"></div>
   </section>
 
   <section id="guests">
-    <h2><span>04</span>Гости</h2>
+    <h2><span>05</span>Гости</h2>
     <div class="guests rv" id="gl"></div>
     <div class="gstat" id="gs"></div>
     <div class="sign" id="sign"></div>
@@ -257,7 +299,7 @@ footer b{color:var(--dim);font-weight:500}
   </section>
 
   <section id="projects">
-    <h2><span>05</span>Проекты</h2>
+    <h2><span>06</span>Проекты</h2>
     <div class="proj rv" id="grid"></div>
   </section>
 
@@ -697,6 +739,20 @@ function renderGames(){
     <div class="gdays">${cols}</div><div class="glab">${days.map(d => `<span>${wd(d.date)}</span>`).join('')}</div>`;
 }
 
+
+/* YouTube: последние ролики канала (их приносит бот) */
+function renderYouTube(){
+  const y = ACT && ACT.youtube, vids = (y && y.videos) || [];
+  $('youtube').style.display = vids.length ? '' : 'none';
+  if (!vids.length) return;
+  const url = v => v.short ? `https://www.youtube.com/shorts/${encodeURIComponent(v.id)}` : `https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}`;
+  const views = n => n == null ? '' : ' · ' + n.toLocaleString('ru-RU') + ' ' + (n%10===1 && n%100!==11 ? 'просмотр' : [2,3,4].includes(n%10) && ![12,13,14].includes(n%100) ? 'просмотра' : 'просмотров');
+  const card = (v, big) => `<a class="yv${big ? ' big' : ''}" href="${url(v)}" target="_blank" rel="noopener">
+    <div class="th" style="background-image:url('https://i.ytimg.com/vi/${encodeURIComponent(v.id)}/${big ? 'hqdefault' : 'mqdefault'}.jpg')"><span class="pl"></span>${v.short ? '<span class="sh">Shorts</span>' : ''}</div>
+    <div class="t"><b>${esc(v.title)}</b><small>${v.published ? agoLong(v.published) : ''}${views(v.views)}</small></div></a>`;
+  $('yt').innerHTML = card(vids[0], true) + (vids.length > 1 ? `<div class="ys">${vids.slice(1, 4).map(v => card(v, false)).join('')}</div>` : '');
+}
+
 /* ================= данные из gist (их кладёт бот) ================= */
 const PFILE = "presence.json", VFILE = "visitors.json", AFILE = "activity.json", STALE = 12*60*1000;
 let gistId = store.get('presenceGist');
@@ -752,7 +808,7 @@ async function loadGist(){
     }
     FRIENDS.forEach((f,i) => renderFriend(f, i, users[f.id] ? (alive ? users[f.id] : off(users[f.id])) : null));
     if (vTxt) renderGuests(JSON.parse(vTxt));
-    if (aTxt){ ACT = JSON.parse(aTxt); renderMusic(); renderGames(); }
+    if (aTxt){ ACT = JSON.parse(aTxt); renderMusic(); renderGames(); renderYouTube(); }
   } catch(e){ console.warn('loadGist', e); }
 }
 loadGist();
