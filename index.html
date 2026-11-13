@@ -233,6 +233,48 @@ a.hi:hover{background:#0b1020}
 .ys .yv b{font-size:13px}
 @media (max-width:640px){.yt{grid-template-columns:1fr}.ys .yv{grid-template-columns:120px 1fr}}
 
+/* в голосовом */
+.voice{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:14px;padding:14px 16px;border:1px solid rgba(74,222,128,.35);background:rgba(74,222,128,.05)}
+.voice .vh{display:flex;align-items:center;gap:10px;min-width:0}
+.voice .vh svg{width:20px;height:20px;fill:none;stroke:#4ade80;stroke-width:1.8;flex:none}
+.voice .vh b{font-weight:500}
+.voice .vh small{display:block;font-size:12px;color:var(--dim)}
+.vp{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto}
+.vm{position:relative;display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 10px 4px 4px;border:1px solid var(--line);border-radius:20px;background:var(--bg)}
+.vm img{width:26px;height:26px;border-radius:50%;object-fit:cover;background:#111827}
+.vm i{font-style:normal;font-size:11px;color:var(--faint)}
+.vm.me{border-color:rgba(74,222,128,.5)}
+.vm .live{background:#e8102a;color:#fff;font-size:10px;padding:1px 5px;letter-spacing:.06em}
+.vo{font-size:12px;color:var(--dim)}
+
+/* Telegram */
+.tgl{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.tp{display:flex;flex-direction:column;color:inherit;border:1px solid var(--line);background:var(--card);transition:border-color .2s;min-width:0}
+.tp:hover{border-color:#2aabee}
+.tp .hd{display:flex;align-items:center;gap:10px;padding:12px 14px}
+.tp .hd img,.tp .hd .noav{width:32px;height:32px;border-radius:50%;object-fit:cover;flex:none;background:#2aabee;display:grid;place-items:center}
+.tp .hd .noav svg{width:16px;height:16px;fill:#fff}
+.tp .hd b{display:block;font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tp .hd small{display:block;font-size:12px;color:var(--dim)}
+.tp .ph{aspect-ratio:16/9;background:#111827 center/cover no-repeat}
+.tp p{padding:12px 14px 4px;font-size:14px;line-height:1.5;white-space:pre-line;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+.tp .ft{margin-top:auto;padding:8px 14px 12px;font-size:12px;color:var(--faint);display:flex;justify-content:space-between}
+.tp .ft span:last-child{color:#2aabee}
+
+/* Steam */
+.st{display:grid;gap:8px}
+.sg{display:grid;grid-template-columns:120px 1fr 120px;gap:14px;align-items:center;color:inherit;padding:8px;border:1px solid var(--line);background:var(--card);transition:border-color .2s}
+.sg:hover{border-color:#66c0f4}
+.sg img{width:120px;height:45px;object-fit:cover;background:#111827;display:block}
+.sg .t{min-width:0}
+.sg b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sg .tr{height:6px;margin-top:7px;background:var(--line);border-radius:0 3px 3px 0}
+.sg .tr u{display:block;height:100%;background:#66c0f4;border-radius:0 3px 3px 0}
+.sg .v{text-align:right;font-variant-numeric:tabular-nums}
+.sg .v b{font-weight:500}
+.sg .v small{display:block;font-size:12px;color:var(--faint)}
+@media (max-width:560px){.sg{grid-template-columns:84px 1fr 84px}.sg img{width:84px;height:32px}}
+
 footer{margin-top:80px;padding:28px 0 48px;border-top:1px solid var(--line);font-size:12px;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 footer b{color:var(--dim);font-weight:500}
 
@@ -260,7 +302,7 @@ footer b{color:var(--dim);font-weight:500}
 </div>
 
 <nav><div class="wrap">
-  <a href="#now">Сейчас</a><a href="#links">Связь</a><a href="#youtube">YouTube</a><a href="#friends">Друзья</a><a href="#guests">Гости</a><a href="#projects">Проекты</a>
+  <a href="#now">Сейчас</a><a href="#links">Связь</a><a href="#youtube">YouTube</a><a href="#telegram">Telegram</a><a href="#friends">Друзья</a><a href="#guests">Гости</a><a href="#projects">Проекты</a>
 </div></nav>
 
 <main class="wrap">
@@ -271,8 +313,10 @@ footer b{color:var(--dim);font-weight:500}
       <div class="who"><b id="nm">SevereClaw</b><small id="stt">загрузка…</small></div>
     </div>
     <div class="acts" id="acts"></div>
+    <div id="voice"></div>
     <div id="music"></div>
     <div id="games"></div>
+    <div id="steam"></div>
   </section>
 
   <section id="links">
@@ -285,13 +329,18 @@ footer b{color:var(--dim);font-weight:500}
     <div class="yt rv" id="yt"></div>
   </section>
 
+  <section id="telegram" style="display:none">
+    <h2><span>04</span>Новое в Telegram</h2>
+    <div class="tgl rv" id="tgl"></div>
+  </section>
+
   <section id="friends">
-    <h2><span>04</span>Друзья</h2>
+    <h2><span>05</span>Друзья</h2>
     <div class="list rv" id="fr"></div>
   </section>
 
   <section id="guests">
-    <h2><span>05</span>Гости</h2>
+    <h2><span>06</span>Гости</h2>
     <div class="guests rv" id="gl"></div>
     <div class="gstat" id="gs"></div>
     <div class="sign" id="sign"></div>
@@ -299,7 +348,7 @@ footer b{color:var(--dim);font-weight:500}
   </section>
 
   <section id="projects">
-    <h2><span>06</span>Проекты</h2>
+    <h2><span>07</span>Проекты</h2>
     <div class="proj rv" id="grid"></div>
   </section>
 
@@ -753,6 +802,49 @@ function renderYouTube(){
   $('yt').innerHTML = card(vids[0], true) + (vids.length > 1 ? `<div class="ys">${vids.slice(1, 4).map(v => card(v, false)).join('')}</div>` : '');
 }
 
+
+/* в голосовом: я и друзья из списка; остальные — числом */
+let VOICE = null;
+function renderVoice(){
+  const v = VOICE, box = $('voice'); if (!box) return;
+  if (!v || !v.people || !v.people.length){ box.innerHTML = ''; return; }
+  const av = p => p.avatar ? `https://cdn.discordapp.com/avatars/${p.id}/${p.avatar}.png?size=64` : defAv(p.id);
+  const st = p => [p.stream ? '<span class="live">LIVE</span>' : '', p.deaf ? '<i>🔇 не слышит</i>' : p.mute ? '<i>микрофон выкл.</i>' : ''].join('');
+  const others = v.others > 0 ? `<span class="vo">и ещё ${v.others}</span>` : '';
+  box.innerHTML = `<div class="voice"><div class="vh"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+    <div><b>В голосовом · ${esc(v.channel)}</b><small class="tm" data-s="${v.since}"></small></div></div>
+    <div class="vp">${v.people.map(p => `<span class="vm${p.me ? ' me' : ''}"><img src="${esc(av(p))}" alt="">${esc(p.me ? 'я' : p.name)}${st(p)}</span>`).join('')}${others}</div></div>`;
+  tickNow();
+}
+
+/* Telegram: последние посты каналов */
+function renderTelegram(){
+  const list = (ACT && ACT.telegram) || [];
+  $('telegram').style.display = list.length ? '' : 'none';
+  if (!list.length) return;
+  $('tgl').innerHTML = list.map(c => { const p = c.post;
+    return `<a class="tp" href="${esc(p.url)}" target="_blank" rel="noopener">
+      <div class="hd">${c.avatar ? `<img src="${esc(c.avatar)}" alt="" onerror="this.outerHTML='<span class=&quot;noav&quot;>${ICONS.tg.replace(/"/g,'&quot;')}</span>'">` : `<span class="noav">${ICONS.tg}</span>`}<div><b>${esc(c.title)}</b><small>@${esc(c.channel)}</small></div></div>
+      ${p.photo ? `<div class="ph" style="background-image:url('${esc(p.photo)}')"></div>` : ''}
+      ${p.text ? `<p>${esc(p.text)}</p>` : ''}
+      <div class="ft"><span>${p.date ? agoLong(p.date) : ''}${p.views ? ' · ' + esc(p.views) + ' просм.' : ''}</span><span>Открыть в Telegram ↗</span></div></a>`; }).join('');
+}
+
+/* Steam: во что играл за 2 недели */
+function renderSteam(){
+  const s = ACT && ACT.steam, box = $('steam'); if (!box) return;
+  const g = (s && s.games) || [];
+  if (!g.length){ box.innerHTML = ''; return; }
+  const max = Math.max(...g.map(x => x.h2w), .1);
+  const h = n => n.toLocaleString('ru-RU', {maximumFractionDigits: n < 10 ? 1 : 0}) + ' ч';
+  const sum = g.reduce((a, x) => a + x.h2w, 0);
+  box.innerHTML = `<div class="sub">Steam за 2 недели<small>${h(sum)} всего${s.profile ? ` · <a href="${esc(s.profile)}" target="_blank" rel="noopener" style="color:var(--dim)">профиль ↗</a>` : ''}</small></div>
+    <div class="st">${g.map(x => `<a class="sg" href="${x.appid ? `https://store.steampowered.com/app/${esc(x.appid)}` : esc(s.profile)}" target="_blank" rel="noopener" data-tip-html="${esc(`<b>${esc(x.name)}</b><br>за 2 недели: ${h(x.h2w)}<br>всего: ${h(x.total)}`)}">
+      ${x.img ? `<img src="${esc(x.img)}" alt="" onerror="this.style.visibility='hidden'">` : '<img alt="" style="visibility:hidden">'}
+      <div class="t"><b>${esc(x.name)}</b><div class="tr"><u style="width:${Math.max(2, x.h2w/max*100)}%"></u></div></div>
+      <div class="v"><b>${h(x.h2w)}</b><small>всего ${h(x.total)}</small></div></a>`).join('')}</div>`;
+}
+
 /* ================= данные из gist (их кладёт бот) ================= */
 const PFILE = "presence.json", VFILE = "visitors.json", AFILE = "activity.json", STALE = 12*60*1000;
 let gistId = store.get('presenceGist');
@@ -797,6 +889,7 @@ async function loadGist(){
       const fresh = await findGist();
       if (fresh && fresh !== gistId){ gistId = fresh; return loadGist(); }
     }
+    VOICE = alive ? (data.voice || null) : null; renderVoice();
     const users = data.users || {};
     const off = u => u && Object.assign({}, u, {discord_status:"offline", activities:[]});
     P = alive ? users[DISCORD_ID] : off(users[DISCORD_ID]);
@@ -808,7 +901,7 @@ async function loadGist(){
     }
     FRIENDS.forEach((f,i) => renderFriend(f, i, users[f.id] ? (alive ? users[f.id] : off(users[f.id])) : null));
     if (vTxt) renderGuests(JSON.parse(vTxt));
-    if (aTxt){ ACT = JSON.parse(aTxt); renderMusic(); renderGames(); renderYouTube(); }
+    if (aTxt){ ACT = JSON.parse(aTxt); renderMusic(); renderGames(); renderYouTube(); renderTelegram(); renderSteam(); }
   } catch(e){ console.warn('loadGist', e); }
 }
 loadGist();
