@@ -294,6 +294,38 @@ a.hi:hover{background:#0b1020}
 .tt .ph a{color:var(--fg);border:1px solid var(--line2);padding:9px 16px;transition:.2s}
 .tt .ph a:hover{border-color:#fe2c55;color:#fe2c55}
 
+/* отзывы */
+.pj .rate{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--dim);background:none;border:0;padding:0;cursor:pointer;margin:-4px 0 12px;font-family:inherit}
+.pj .rate .s{color:#ffd36b;letter-spacing:1px}
+.pj .rate:hover{color:var(--fg)}
+.rwm{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(3,5,10,.72);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .3s}
+.rwm.on{opacity:1;pointer-events:auto}
+.rwm .box{width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 40px);overflow:auto;background:#0a0f1c;border:1px solid var(--line2);padding:24px}
+.rwm h3{font:600 26px/1.1 Oswald,sans-serif;text-transform:uppercase;display:flex;align-items:center;gap:12px}
+.rwm h3 .x{margin-left:auto;background:none;border:0;color:var(--dim);font-size:24px;cursor:pointer}
+.rwm .avg{color:var(--dim);font-size:14px;margin:6px 0 16px}
+.rwm .avg b{color:#ffd36b;font-weight:500;letter-spacing:1px}
+.rwi{border-top:1px solid var(--line);padding:12px 0}
+.rwi .top{display:flex;gap:10px;align-items:baseline;font-size:13px}
+.rwi .top .s{color:#ffd36b;letter-spacing:1px}
+.rwi .top b{font-weight:500}
+.rwi .top time{margin-left:auto;color:var(--faint);font-size:12px}
+.rwi p{margin-top:6px;font-size:14px;white-space:pre-line}
+.rwf{border-top:1px solid var(--line2);margin-top:8px;padding-top:16px}
+.rwf .lb{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.rwf .pick{display:flex;gap:4px;margin-bottom:12px}
+.rwf .pick button{background:none;border:0;font-size:28px;line-height:1;color:var(--faint);cursor:pointer;padding:0 2px;transition:color .15s,transform .15s}
+.rwf .pick button.on{color:#ffd36b}
+.rwf .pick button:hover{transform:scale(1.15)}
+.rwf input,.rwf textarea{width:100%;background:#0f1626;border:1px solid var(--line2);color:var(--fg);font:14px Rubik,sans-serif;padding:10px 12px;outline:none;margin-bottom:10px}
+.rwf input:focus,.rwf textarea:focus{border-color:var(--acc)}
+.rwf textarea{min-height:90px;resize:vertical}
+.rwf .row2{display:flex;align-items:center;gap:12px}
+.rwf .row2 small{color:var(--faint);font-size:12px;flex:1}
+.rwf .send{font:500 14px Rubik,sans-serif;color:#04121a;background:var(--acc);border:0;padding:10px 18px;cursor:pointer}
+.rwf .send:disabled{opacity:.4;cursor:default}
+.rwf .done{color:#4ade80;font-size:14px}
+
 footer{margin-top:80px;padding:28px 0 48px;border-top:1px solid var(--line);font-size:12px;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 footer b{color:var(--dim);font-weight:500}
 
@@ -398,6 +430,12 @@ footer b{color:var(--dim);font-weight:500}
     <button class="skip" data-who="">Не хочу отвечать</button>
   </div>
 </div>
+<div class="rwm" id="rwm" role="dialog" aria-modal="true"><div class="box">
+  <h3><span id="rwT"></span><button class="x" id="rwX" aria-label="Закрыть">×</button></h3>
+  <div class="avg" id="rwAvg"></div>
+  <div id="rwList"></div>
+  <div class="rwf" id="rwF"></div>
+</div></div>
 <div class="toast" id="toast"></div>
 <div class="tip" id="tip"></div>
 
@@ -482,7 +520,7 @@ $('grid').innerHTML = PROJECTS.map(p => {
   const links = [`<a href="${GH+p.repo}/releases/latest" target="_blank" rel="noopener">Скачать</a>`]
     .concat((p.extra||[]).map(e => `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.label)}</a>`))
     .concat([`<a href="${GH+p.repo}" target="_blank" rel="noopener">Код</a>`]).join('');
-  return `<article class="pj ${p.style}" data-repo="${esc(p.repo)}"><h3>${esc(p.title)}</h3><p>${esc(p.text)}</p><div class="tags">${esc(p.tags)}</div><div class="upd"></div><div class="lk">${links}</div></article>`;
+  return `<article class="pj ${p.style}" data-repo="${esc(p.repo)}"><h3>${esc(p.title)}</h3><p>${esc(p.text)}</p><div class="tags">${esc(p.tags)}</div><div class="upd"></div><button class="rate" data-rw="${esc(p.repo)}"><span class="s">☆☆☆☆☆</span><span class="n">оставить отзыв</span></button><div class="lk">${links}</div></article>`;
 }).join('');
 
 
@@ -914,8 +952,59 @@ function renderCommits(){
   new IntersectionObserver((es, o) => { if (es.some(e => e.isIntersecting)){ load(); o.disconnect(); } }, { rootMargin: '400px' }).observe(box);
 })();
 
+
+/* ================= отзывы о программах ================= */
+let REVIEWS = [];
+const starStr = n => '★'.repeat(Math.round(n)) + '☆'.repeat(5 - Math.round(n));
+const pl = (n, a, b, c) => n%10===1 && n%100!==11 ? a : [2,3,4].includes(n%10) && ![12,13,14].includes(n%100) ? b : c;
+function revOf(repo){ return REVIEWS.filter(r => r.repo.toLowerCase() === repo.toLowerCase()); }
+function renderRatings(){
+  document.querySelectorAll('.pj .rate').forEach(b => {
+    const list = revOf(b.dataset.rw);
+    if (!list.length){ b.querySelector('.s').textContent = '☆☆☆☆☆'; b.querySelector('.n').textContent = 'оставить отзыв'; return; }
+    const avg = list.reduce((a, r) => a + r.stars, 0) / list.length;
+    b.querySelector('.s').textContent = starStr(avg);
+    b.querySelector('.n').textContent = `${avg.toFixed(1).replace('.', ',')} · ${list.length} ${pl(list.length, 'отзыв', 'отзыва', 'отзывов')}`;
+  });
+}
+let rwRepo = null, rwStars = 0;
+function openReviews(repo){
+  rwRepo = repo; rwStars = 0;
+  const p = PROJECTS.find(x => x.repo === repo);
+  $('rwT').textContent = (p ? p.title : repo) + ' · отзывы';
+  const list = revOf(repo);
+  const avg = list.length ? list.reduce((a, r) => a + r.stars, 0) / list.length : 0;
+  $('rwAvg').innerHTML = list.length ? `<b>${starStr(avg)}</b> ${avg.toFixed(1).replace('.', ',')} из 5 · ${list.length} ${pl(list.length, 'отзыв', 'отзыва', 'отзывов')}` : 'Отзывов пока нет. Будь первым.';
+  $('rwList').innerHTML = list.map(r => `<div class="rwi"><div class="top"><span class="s">${starStr(r.stars)}</span><b>${esc(r.name)}</b><time>${new Date(r.time).toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'})}</time></div><p>${esc(r.text)}</p></div>`).join('');
+  const sent = store.get('rw:' + repo.toLowerCase());
+  $('rwF').innerHTML = sent ? '<div class="done">Ты уже оставил отзыв на эту программу. Он появится здесь после проверки.</div>' : `
+    <div class="lb">Твой отзыв</div>
+    <div class="pick" id="rwPick">${[1,2,3,4,5].map(n => `<button data-n="${n}" aria-label="${n} из 5">★</button>`).join('')}</div>
+    <input id="rwName" maxlength="40" placeholder="Имя (можно не писать)">
+    <textarea id="rwText" maxlength="600" placeholder="Что понравилось, что нет, чего не хватает"></textarea>
+    <div class="row2"><small>Отзыв появится после проверки</small><button class="send" id="rwSend" disabled>Отправить</button></div>`;
+  if (!sent){
+    const upd = () => { $('rwSend').disabled = !(rwStars && $('rwText').value.trim().length >= 3); };
+    $('rwPick').onclick = e => { const b = e.target.closest('[data-n]'); if (!b) return; rwStars = +b.dataset.n;
+      $('rwPick').querySelectorAll('button').forEach(x => x.classList.toggle('on', +x.dataset.n <= rwStars)); upd(); };
+    $('rwText').oninput = upd;
+    $('rwSend').onclick = () => {
+      let vid = store.get('vid'); if (!vid){ vid = Math.random().toString(36).slice(2, 12); store.set('vid', vid); }
+      ntfy({ t:"review", repo: rwRepo, stars: rwStars, text: $('rwText').value.trim(), name: $('rwName').value.trim(), vid });
+      store.set('rw:' + rwRepo.toLowerCase(), Date.now());
+      $('rwF').innerHTML = '<div class="done">Спасибо! Отзыв появится здесь после проверки.</div>';
+    };
+  }
+  $('rwm').classList.add('on');
+}
+function closeReviews(){ $('rwm').classList.remove('on'); }
+document.addEventListener('click', e => { const b = e.target.closest('.pj .rate'); if (b) openReviews(b.dataset.rw); });
+$('rwX').onclick = closeReviews;
+$('rwm').addEventListener('click', e => { if (e.target === $('rwm')) closeReviews(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && $('rwm').classList.contains('on')) closeReviews(); });
+
 /* ================= данные из gist (их кладёт бот) ================= */
-const PFILE = "presence.json", VFILE = "visitors.json", AFILE = "activity.json", STALE = 12*60*1000;
+const PFILE = "presence.json", VFILE = "visitors.json", AFILE = "activity.json", RFILE = "reviews.json", STALE = 12*60*1000;
 let gistId = store.get('presenceGist');
 // Сам список gist — запрос к API GitHub (60 в час на IP без входа, через VPN их делят многие),
 // поэтому он делается редко. Файлы читаются по прямой ссылке, у неё такого лимита нет.
@@ -939,10 +1028,10 @@ async function loadGist(){
   try {
     if (!gistId && Date.now() - lastFind > 60000) gistId = await findGist();
     if (!gistId) return noStatus(apiLimited ? "GitHub временно ограничил запросы, статус появится через несколько минут" : "статус пока не настроен");
-    let [pTxt, vTxt, aTxt] = await Promise.all([rawFile(gistId, PFILE), rawFile(gistId, VFILE), rawFile(gistId, AFILE)]);
+    let [pTxt, vTxt, aTxt, rTxt] = await Promise.all([rawFile(gistId, PFILE), rawFile(gistId, VFILE), rawFile(gistId, AFILE), rawFile(gistId, RFILE)]);
     if (pTxt === null){                                  // запасной путь: через API, как раньше
       const r = await fetch(`https://api.github.com/gists/${gistId}`).catch(() => null);
-      if (r && r.ok){ const f = (await r.json()).files || {}; pTxt = f[PFILE]?.content ?? null; vTxt = f[VFILE]?.content ?? null; aTxt = f[AFILE]?.content ?? null; }
+      if (r && r.ok){ const f = (await r.json()).files || {}; pTxt = f[PFILE]?.content ?? null; vTxt = f[VFILE]?.content ?? null; aTxt = f[AFILE]?.content ?? null; rTxt = f[RFILE]?.content ?? null; }
       else if (r && (r.status === 403 || r.status === 429)) apiLimited = true;
     }
     if (pTxt === null){                                  // gist удалён или заменён новым
@@ -970,6 +1059,7 @@ async function loadGist(){
     }
     FRIENDS.forEach((f,i) => renderFriend(f, i, users[f.id] ? (alive ? users[f.id] : off(users[f.id])) : null));
     if (vTxt) renderGuests(JSON.parse(vTxt));
+    if (rTxt){ try { REVIEWS = (JSON.parse(rTxt).reviews || []).filter(r => r && r.repo && r.stars >= 1 && r.stars <= 5); } catch(e){} renderRatings(); }
     if (aTxt){ ACT = JSON.parse(aTxt); renderMusic(); renderGames(); renderYouTube(); renderTelegram(); renderSteam(); renderCommits(); }
   } catch(e){ console.warn('loadGist', e); }
 }
