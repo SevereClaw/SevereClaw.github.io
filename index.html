@@ -905,6 +905,12 @@ function renderTelegram(){
 }
 
 /* Steam: во что играл за 2 недели */
+const steamHeader = id => `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${encodeURIComponent(id)}/header.jpg`;
+function imgNext(img){                 // следующая запасная картинка, а если их нет — пустое место
+  const rest = (img.dataset.alt || '').split(' ').filter(Boolean);
+  if (rest.length){ img.dataset.alt = rest.slice(1).join(' '); img.src = rest[0]; }
+  else { img.onerror = null; img.style.visibility = 'hidden'; }
+}
 function renderSteam(){
   const s = ACT && ACT.steam, box = $('steam'); if (!box) return;
   const g = (s && s.games) || [];
@@ -914,7 +920,7 @@ function renderSteam(){
   const sum = g.reduce((a, x) => a + x.h2w, 0);
   box.innerHTML = `<div class="sub">Steam за 2 недели<small>${h(sum)} всего${s.profile ? ` · <a href="${esc(s.profile)}" target="_blank" rel="noopener" style="color:var(--dim)">профиль ↗</a>` : ''}</small></div>
     <div class="st">${g.map(x => `<a class="sg" href="${x.appid ? `https://store.steampowered.com/app/${esc(x.appid)}` : esc(s.profile)}" target="_blank" rel="noopener" data-tip-html="${esc(`<b>${esc(x.name)}</b><br>за 2 недели: ${h(x.h2w)}<br>всего: ${h(x.total)}`)}">
-      ${x.img ? `<img src="${esc(x.img)}" alt="" onerror="this.style.visibility='hidden'">` : '<img alt="" style="visibility:hidden">'}
+      ${x.img || x.logo || x.appid ? `<img src="${esc(x.img || x.logo || steamHeader(x.appid))}" data-alt="${esc([x.logo, x.appid ? steamHeader(x.appid) : ''].filter(u => u && u !== (x.img || x.logo)).join(' '))}" alt="" onerror="imgNext(this)">` : '<img alt="" style="visibility:hidden">'}
       <div class="t"><b>${esc(x.name)}</b><div class="tr"><u style="width:${Math.max(2, x.h2w/max*100)}%"></u></div></div>
       <div class="v"><b>${h(x.h2w)}</b><small>всего ${h(x.total)}</small></div></a>`).join('')}</div>`;
 }
