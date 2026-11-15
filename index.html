@@ -596,15 +596,16 @@ function renderNow(){
     kind:isVpn(a) ? "vpn" : a.type, title:a.details || a.name,
     sub:[a.details ? a.state : "", a.details ? "" : a.state].filter(Boolean).join(" · ") || (a.details ? a.name : (a.source === 'steam' ? "в Steam" : "")),
     img: asset(a, a.assets && a.assets.large_image) || (a.art && a.art.header) || "", ts:a.timestamps, app:a.name,
-    url: a.type === 3 && (a.details || a.state) ? videoUrl(a) : null }));
+    url: a.type === 3 && (a.details || a.state) ? videoUrl(a) : null, paused: isPaused(a) })).map(x => x.paused ? Object.assign(x, { title: unpause(x.title) || x.title, sub: unpause(x.sub) }) : x);
   const box = $('acts');
   renderMusic();
   if (!acts.length){ box.innerHTML = (P.activities||[]).some(a => a.type === 2) ? "" : `<div class="idle-msg">${st === "offline" ? "Сейчас не в сети." : "Сейчас ничего не запущено."}</div>`; return; }
   box.innerHTML = acts.map(a => {
-    const [label,color] = KIND[a.kind] || ["Занят","#66e0ff"];
+    let [label,color] = KIND[a.kind] || ["Занят","#66e0ff"];
+    if (a.paused) label = ({3:"⏸ Смотрел", 2:"⏸ Слушал", 1:"⏸ Стримил"})[a.kind] || label;
     const img = a.img ? `<img src="${esc(a.img)}" alt="" onerror="this.remove()">` : "";
-    const bar = a.ts && a.ts.start && a.ts.end ? `<div class="bar"><u data-s="${a.ts.start}" data-e="${a.ts.end}"></u></div>` : "";
-    const tm = a.ts && a.ts.start ? `<div class="tm" data-s="${a.ts.start}" ${a.ts.end?`data-e="${a.ts.end}"`:""}></div>` : "";
+    const bar = !a.paused && a.ts && a.ts.start && a.ts.end ? `<div class="bar"><u data-s="${a.ts.start}" data-e="${a.ts.end}"></u></div>` : "";
+    const tm = !a.paused && a.ts && a.ts.start ? `<div class="tm" data-s="${a.ts.start}" ${a.ts.end?`data-e="${a.ts.end}"`:""}></div>` : "";
     const tag = a.url ? `a href="${esc(a.url)}" target="_blank" rel="noopener" title="Открыть видео"` : 'div';
     return `<${tag} class="act rv in" style="--k:${color}">${img}<div class="t"><em>${label} · ${esc(a.app)}${a.url ? ' ↗' : ''}</em>
       <strong>${esc(a.title)}</strong>${a.sub?`<p>${esc(a.sub)}</p>`:""}${bar}${tm}</div></${a.url ? 'a' : 'div'}>`;
@@ -803,6 +804,9 @@ document.addEventListener('mouseout', e => { if (e.target.closest('[data-tip-htm
 
 function cover(url, cls){ return url ? `<img src="${esc(url)}" alt="" onerror="this.outerHTML='<div class=&quot;nocov ${cls||''}&quot;>♪</div>'">` : `<div class="nocov">♪</div>`; }
 const isLyric = t => typeof t === 'string' && /^\s*[♪♫🎵🎶]/.test(t);
+const PAUSE_RE = /⏸|на паузе|paused|пауза/i;
+const isPaused = a => !!a && [a.details, a.state].some(t => typeof t === 'string' && PAUSE_RE.test(t));
+const unpause = t => typeof t === 'string' ? t.replace(/^\s*(⏸\uFE0F?\s*)?(на паузе|paused|пауза)\s*[•·:|—-]?\s*/i, '').replace(/^\s*⏸\uFE0F?\s*/, '').trim() || null : t;
 function renderMusic(){
   const box = $('music'); if (!box) return;
   let now = P && P.discord_status !== 'offline' ? (P.activities||[]).find(a => a.type === 2) : null;
@@ -811,16 +815,18 @@ function renderMusic(){
   if (now){                                   // строки текста песни (♪ …) не показываем
     const lt = now.assets && now.assets.large_text;
     const title = !isLyric(now.details) && now.details ? now.details : (lt && !isLyric(lt) ? lt : null);
-    const sub = !isLyric(now.state) && now.state ? now.state : null;
-    now = title ? Object.assign({}, now, { details: title, state: sub }) : (sub ? Object.assign({}, now, { details: sub, state: null }) : null);
+    const paused = isPaused(now);
+    let sub = !isLyric(now.state) && now.state ? now.state : null;
+    if (paused) sub = unpause(sub);
+    now = title ? Object.assign({}, now, { details: unpause(title) || title, state: sub, paused }) : (sub ? Object.assign({}, now, { details: sub, state: null, paused }) : null);
   }
   const tracks = ((ACT && ACT.music && ACT.music.tracks) || []).filter(t => t && t.title && !isLyric(t.title));
   let card = '';
   if (now){
     const t = now.timestamps;
-    const bar = t && t.start && t.end ? `<div class="bar"><u data-s="${t.start}" data-e="${t.end}"></u></div><div class="tm" data-s="${t.start}" data-e="${t.end}"></div>` : '';
+    const bar = !now.paused && t && t.start && t.end ? `<div class="bar"><u data-s="${t.start}" data-e="${t.end}"></u></div><div class="tm" data-s="${t.start}" data-e="${t.end}"></div>` : '';
     card = `<a class="track" href="${musicUrl(now.details || now.state, now.details ? now.state : '')}" target="_blank" rel="noopener" title="Открыть в YouTube Music"><div>${cover(asset(now, now.assets && now.assets.large_image))}</div><div class="t">
-      <em><span class="eq"><i></i><i></i><i></i></span>Сейчас слушаю · ${esc(now.name)}</em>
+      ${now.paused ? `<em class="past">⏸ Слушал · ${esc(now.name)}</em>` : `<em><span class="eq"><i></i><i></i><i></i></span>Сейчас слушаю · ${esc(now.name)}</em>`}
       <strong>${esc(now.details || now.state)}</strong>${now.details && now.state ? `<p>${esc(now.state)}</p>` : ''}${bar}</div></a>`;
   } else if (tracks[0]){
     const t = tracks[0];
