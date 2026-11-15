@@ -806,6 +806,8 @@ const isLyric = t => typeof t === 'string' && /^\s*[♪♫🎵🎶]/.test(t);
 function renderMusic(){
   const box = $('music'); if (!box) return;
   let now = P && P.discord_status !== 'offline' ? (P.activities||[]).find(a => a.type === 2) : null;
+  // трек по времени давно кончился, а новых данных нет (бот не смог обновить статус) — это уже не «сейчас»
+  if (now && now.timestamps && now.timestamps.end && Date.now() > now.timestamps.end + 90000) now = null;
   if (now){                                   // строки текста песни (♪ …) не показываем
     const lt = now.assets && now.assets.large_text;
     const title = !isLyric(now.details) && now.details ? now.details : (lt && !isLyric(lt) ? lt : null);
