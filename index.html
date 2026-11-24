@@ -258,6 +258,10 @@ a.hi:hover{background:#0b1020}
 .tp .hd small{display:block;font-size:12px;color:var(--dim)}
 .tp .ph{aspect-ratio:16/9;background:#111827 center/cover no-repeat}
 .tp p{padding:12px 14px 4px;font-size:14px;line-height:1.5;white-space:pre-line;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+.tp .tx{list-style:none;margin:0;padding:6px 14px 4px;display:grid;gap:8px}
+.tp .tx li{border-left:2px solid #2aabee;padding:2px 0 2px 10px;font-size:14px;line-height:1.45;min-width:0}
+.tp .tx span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;overflow-wrap:anywhere}
+.tp .tx i{display:block;font-style:normal;font-size:11px;color:var(--faint);margin-top:2px}
 .tp .ft{margin-top:auto;padding:8px 14px 12px;font-size:12px;color:var(--faint);display:flex;justify-content:space-between}
 .tp .ft span:last-child{color:#2aabee}
 
@@ -912,6 +916,7 @@ function renderTelegram(){
       <div class="hd">${c.avatar ? `<img src="${esc(c.avatar)}" alt="" onerror="this.outerHTML='<span class=&quot;noav&quot;>${ICONS.tg.replace(/"/g,'&quot;')}</span>'">` : `<span class="noav">${ICONS.tg}</span>`}<div><b>${esc(c.title)}</b><small>@${esc(c.channel)}</small></div></div>
       ${p.photo ? `<div class="ph" style="background-image:url('${esc(p.photo)}')"></div>` : ''}
       ${p.text ? `<p>${esc(p.text)}</p>` : ''}
+      ${(c.texts || []).length ? `<ul class="tx">${c.texts.map(t => `<li><span>${esc(t.text)}</span><i>${t.date ? agoLong(t.date) : ''}</i></li>`).join('')}</ul>` : ''}
       <div class="ft"><span>${p.date ? agoLong(p.date) : ''}${p.views ? ' · ' + esc(p.views) + ' просм.' : ''}</span><span>Открыть в Telegram ↗</span></div></a>`; }).join('');
 }
 
