@@ -523,12 +523,58 @@ function toast(t){ const el=$('toast'); el.textContent=t; el.classList.add('on')
 $('social').innerHTML = SOCIAL.map(s => `<a class="row" href="${esc(s.url)}" target="_blank" rel="noopener">
   ${ICONS[s.icon]||''}<div class="t"><b>${esc(s.name)}</b><small>${esc(s.note)}</small></div><span class="ar">→</span></a>`).join('');
 
-$('grid').innerHTML = PROJECTS.map(p => {
-  const links = [`<a href="${GH+p.repo}/releases/latest" target="_blank" rel="noopener">Скачать</a>`]
+function cardHTML(p){
+  const dl = p.auto ? `<a href="${GH+esc(p.repo)}/releases" target="_blank" rel="noopener">Релизы</a>`
+                    : `<a href="${GH+esc(p.repo)}/releases/latest" target="_blank" rel="noopener">Скачать</a>`;
+  const links = [dl]
     .concat((p.extra||[]).map(e => `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.label)}</a>`))
-    .concat([`<a href="${GH+p.repo}" target="_blank" rel="noopener">Код</a>`]).join('');
-  return `<article class="pj ${p.style}" data-repo="${esc(p.repo)}"><h3>${esc(p.title)}</h3><p>${esc(p.text)}</p><div class="tags">${esc(p.tags)}</div><div class="upd"></div><button class="rate" data-rw="${esc(p.repo)}"><span class="s">☆☆☆☆☆</span><span class="n">оставить отзыв</span></button><div class="lk">${links}</div></article>`;
-}).join('');
+    .concat([`<a href="${GH+esc(p.repo)}" target="_blank" rel="noopener">Код</a>`]).join('');
+  return `<article class="pj ${esc(p.style)}" data-repo="${esc(p.repo)}"><h3>${esc(p.title)}</h3><p>${esc(p.text)}</p><div class="tags">${esc(p.tags)}</div><div class="upd"></div><button class="rate" data-rw="${esc(p.repo)}"><span class="s">☆☆☆☆☆</span><span class="n">оставить отзыв</span></button><div class="lk">${links}</div></article>`;
+}
+$('grid').innerHTML = PROJECTS.map(cardHTML).join('');
+
+/* Новые публичные репозитории добавляются на сайт сами: всё, чего нет в PROJECTS выше,
+   берётся из GitHub (описание, язык, темы). Чтобы переписать текст карточки — добавь репозиторий в PROJECTS.
+   Не показываются: форки, архивные, сам сайт, профиль, а также репозитории из HIDE_REPOS.
+   «Что-то-android» не получает своей карточки, а становится кнопкой «Android» у основной программы. */
+const HIDE_REPOS = [];   // сюда — имена репозиториев, которые не надо показывать
+const ANDROID_RE = /^(.+?)[-_. ]?android$/i;
+function autoStyle(x){
+  const t = ((x.topics||[]).join(' ') + ' ' + (x.desc||'') + ' ' + x.name).toLowerCase();
+  if (/persona.?5|\bp5r?\b|phantom/.test(t)) return 'p5';
+  if (/persona.?4|\bp4g?\b/.test(t)) return 'p4';
+  if (/cyber|киберпанк|neon|неон/.test(t)) return 'cyber';
+  return 'p3';
+}
+function addAutoProjects(list){
+  const lc = s => String(s).toLowerCase();
+  const known = new Set(PROJECTS.map(p => lc(p.repo)));
+  const hidden = new Set(HIDE_REPOS.map(lc).concat([lc(GH_USER), lc(GH_USER + '.github.io'), '.github']));
+  const shown = list.filter(x => !x.fork && !x.archived && !hidden.has(lc(x.name)));
+  const names = new Set(shown.map(x => lc(x.name)).concat([...known]));
+  const companion = x => { const m = x.name.match(ANDROID_RE); return m && names.has(lc(m[1])) ? m[1] : null; };
+  const grid = $('grid');
+  shown.forEach(x => {
+    if (known.has(lc(x.name)) || companion(x)) return;
+    const tags = [x.lang].concat((x.topics||[]).slice(0, 3)).filter(Boolean).join(' · ') || 'GitHub';
+    const p = { repo: x.name, title: x.name.replace(/[-_]+/g, ' '), style: autoStyle(x), tags, auto: true,
+                text: x.desc || 'Описание скоро появится, подробности — в репозитории.' };
+    if (x.homepage && /^https?:\/\//.test(x.homepage)) p.extra = [{ label: 'Сайт', url: x.homepage }];
+    PROJECTS.push(p); known.add(lc(x.name));
+    grid.insertAdjacentHTML('beforeend', cardHTML(p));
+    const card = grid.lastElementChild; card.classList.add('in');
+  });
+  shown.forEach(x => {   // кнопка «Android» у основной программы
+    const base = companion(x); if (!base) return;
+    const p = PROJECTS.find(q => lc(q.repo) === lc(base)); if (!p) return;
+    p.extra = p.extra || [];
+    if (p.extra.some(e => lc(e.url).includes('/' + lc(x.name) + '/'))) return;
+    p.extra.push({ label: 'Android', url: GH + x.name + '/releases' });
+    const card = [...grid.querySelectorAll('.pj')].find(c => lc(c.dataset.repo) === lc(p.repo));
+    if (card) card.outerHTML = cardHTML(p);
+  });
+  setTimeout(() => { try { renderRatings(); } catch(e){} });
+}
 
 
 /* когда обновлялись репозитории: один запрос к GitHub, ответ живёт в браузере 15 минут */
@@ -543,15 +589,23 @@ function agoLong(t){
   return new Date(t).toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'});
 }
 async function repoDates(){
-  let data = null;
-  try { const c = JSON.parse(store.get('repoDates') || 'null'); if (c && Date.now() - c.at < 15*60000) data = c.repos; } catch(e){}
-  if (!data){
+  let list = null, cached = null;
+  try { cached = JSON.parse(store.get('repoList') || 'null'); } catch(e){}
+  if (cached && Date.now() - cached.at < 15*60000) list = cached.repos;
+  if (!list){
     try {
-      const r = await fetch(`https://api.github.com/users/${GH_USER}/repos?per_page=100&sort=pushed`);
-      if (r.ok){ data = Object.fromEntries((await r.json()).map(x => [x.name.toLowerCase(), x.pushed_at])); store.set('repoDates', JSON.stringify({at: Date.now(), repos: data})); }
+      const r = await fetch(`https://api.github.com/users/${GH_USER}/repos?per_page=100&sort=pushed&type=owner`);
+      if (r.ok){
+        list = (await r.json()).filter(x => !x.private).map(x => ({ name: x.name, desc: x.description || '', lang: x.language || '',
+          topics: x.topics || [], pushed: x.pushed_at, fork: x.fork, archived: x.archived, homepage: x.homepage || '' }));
+        store.set('repoList', JSON.stringify({at: Date.now(), repos: list}));
+      }
     } catch(e){}
   }
-  if (!data) return;
+  if (!list && cached) list = cached.repos;   // GitHub ограничил запросы — показываем последний удачный список
+  if (!list) return;
+  addAutoProjects(list);
+  const data = Object.fromEntries(list.map(x => [x.name.toLowerCase(), x.pushed]));
   const grid = $('grid');
   const cards = [...grid.querySelectorAll('.pj')];
   cards.forEach(c => {
